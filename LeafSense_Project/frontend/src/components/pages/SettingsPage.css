@@ -259,6 +259,99 @@
   color: #a0aec0;
 }
 
+/* ===== TEXTAREA STYLES ===== */
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* ===== AVATAR STYLES ===== */
+.avatar-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.avatar-container {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.avatar-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  position: relative;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  background: #f7fafc;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.avatar-upload-btn,
+.avatar-remove-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatar-upload-btn {
+  background: #667eea;
+  color: white;
+}
+
+.avatar-upload-btn:hover {
+  background: #5a67d8;
+  transform: translateY(-1px);
+}
+
+.avatar-remove-btn {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.avatar-remove-btn:hover {
+  background: #feb2b2;
+  transform: translateY(-1px);
+}
+
 /* ===== BUTTON STYLES ===== */
 .save-btn,
 .update-btn {
@@ -378,6 +471,31 @@
   color: #a0aec0;
 }
 
+.dark .form-textarea {
+  background: #2d3748;
+  border-color: #718096;
+  color: #f7fafc;
+}
+
+.dark .form-textarea:focus {
+  border-color: #667eea;
+}
+
+.dark .avatar-section {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+.dark .avatar-preview {
+  border-color: #4a5568;
+  background: #1a202c;
+}
+
+.dark .avatar-placeholder {
+  background: #2d3748;
+  color: #a0aec0;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
   .settings-page {
@@ -403,6 +521,23 @@
   
   .account-section {
     padding: 1.25rem;
+  }
+  
+  .avatar-section {
+    padding: 1rem;
+  }
+  
+  .avatar-container {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .avatar-actions {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
   }
   
   .theme-option {

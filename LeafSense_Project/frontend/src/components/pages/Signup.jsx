@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './Signup.css';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',      // sửa lại fullName -> name để khớp với backend
     email: '',
     password: '',
     confirmPassword: ''
   });
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -18,56 +22,66 @@ const Signup = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (formData.password !== formData.confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp!');
+      setError('Mật khẩu xác nhận không khớp!');
       return;
     }
     if (!agreeToTerms) {
-      alert('Vui lòng đồng ý với Điều khoản & Chính sách bảo mật!');
+      setError('Vui lòng đồng ý với Điều khoản & Chính sách bảo mật!');
       return;
     }
-    console.log('Form data:', formData);
-  };
 
-  const handleGoogleSignup = () => {
-    console.log('Google signup clicked');
+    try {
+      // Gọi API backend FastAPI
+      const res = await axios.post('http://localhost:8000/api/auth/signup', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (res.status === 200 || res.status === 201) {
+        alert('Đăng ký thành công! Hãy đăng nhập để tiếp tục.');
+        navigate('/login');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Email đã được sử dụng hoặc có lỗi khi đăng ký.');
+    }
   };
 
   return (
     <div className="signup-container">
-      {/* Phần bên trái với logo và background */}
+      {/* Bên trái logo */}
       <div className="signup-left">
         <div className="signup-left-content">
           <h1 className="logo-text">LeafSense</h1>
           <div className="leaf-pattern">
-            <div className="leaf leaf-1"></div>
-            <div className="leaf leaf-2"></div>
-            <div className="leaf leaf-3"></div>
-            <div className="leaf leaf-4"></div>
-            <div className="leaf leaf-5"></div>
-            <div className="leaf leaf-6"></div>
-            <div className="leaf leaf-7"></div>
-            <div className="leaf leaf-8"></div>
-            <div className="leaf leaf-9"></div>
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className={`leaf leaf-${i + 1}`}></div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Phần bên phải với form đăng ký */}
+      {/* Bên phải form */}
       <div className="signup-right">
         <div className="signup-form-container">
           <h2 className="signup-title">Create your account</h2>
-          
+
+          {error && <p className="error-message">{error}</p>}
+
           <form onSubmit={handleSubmit} className="signup-form">
             <div className="form-group">
-              <label htmlFor="fullName">Full Name</label>
+              <label htmlFor="name">Full Name</label>
               <input
                 type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
+                id="name"
+                name="name"
+                value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Your name"
                 required
@@ -135,7 +149,9 @@ const Signup = () => {
             <span>or</span>
           </div>
 
-          <button className="google-button" onClick={handleGoogleSignup}>
+          <button className="google-button" onClick={() => {
+            window.location.href = "http://localhost:8000/api/auth/google/login";
+          }}>
             <div className="google-icon">
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -149,7 +165,7 @@ const Signup = () => {
 
           <div className="login-link">
             <span>Already have an account? </span>
-            <a href="#" className="login-link-text">Log in</a>
+            <Link to="/login" className="login-link-text">Log in</Link>
           </div>
         </div>
       </div>

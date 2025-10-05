@@ -1,50 +1,73 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Xử lý đăng nhập ở đây
-    console.log('Email:', email, 'Password:', password);
+
+    try {
+      // Gọi API backend FastAPI
+      const res = await axios.post('http://localhost:8000/api/auth/login', {
+        email,
+        password,
+      });
+
+      if (res.status === 200) {
+        const { access_token, user } = res.data;
+        
+        localStorage.setItem('token', access_token);
+        localStorage.setItem('user', JSON.stringify({
+          name: user.name,
+          email: user.email,
+          avatar_url: user.avatar_url || '',
+        }));
+
+        alert('Đăng nhập thành công!');
+        navigate('/'); // quay về Dashboard
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Sai email hoặc mật khẩu!');
+    }
   };
 
   return (
     <div className="login-container">
-      {/* Phần bên trái với logo và background */}
+      {/* Bên trái logo & nền */}
       <div className="login-left">
         <div className="login-left-content">
           <h1 className="logo-text">LeafSense</h1>
           <div className="leaf-pattern">
-            <div className="leaf leaf-1"></div>
-            <div className="leaf leaf-2"></div>
-            <div className="leaf leaf-3"></div>
-            <div className="leaf leaf-4"></div>
-            <div className="leaf leaf-5"></div>
-            <div className="leaf leaf-6"></div>
-            <div className="leaf leaf-7"></div>
-            <div className="leaf leaf-8"></div>
-            <div className="leaf leaf-9"></div>
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className={`leaf leaf-${i + 1}`}></div>
+            ))}
           </div>
         </div>
       </div>
 
-       {/* Phần bên phải với form đăng nhập */}
-       <div className="login-right">
-         <div className="login-form-container">
-           <h2 className="login-title">Login</h2>
-          
+      {/* Bên phải form */}
+      <div className="login-right">
+        <div className="login-form-container">
+          <h2 className="login-title">Login</h2>
+
+          {error && <p className="error-message">{error}</p>}
+
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
-              <label htmlFor="email">Emails</label>
+              <label htmlFor="email">Email</label>
               <input
                 type="email"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Emails"
+                placeholder="Nhập email"
                 required
               />
             </div>
@@ -56,7 +79,8 @@ const Login = () => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder="Nhập mật khẩu"
+                maxLength="72"
                 required
               />
             </div>
@@ -67,15 +91,21 @@ const Login = () => {
           </form>
 
           <div className="login-links">
-            <a href="#" className="signup-link">Sign up for an account</a>
-            <a href="#" className="forgot-link">Forget password?</a>
+            <Link to="/signup" className="signup-link">
+              Sign up for an account
+            </Link>
+            <Link to="/forgot-password" className="forgot-link">
+              Forget password?
+            </Link>
           </div>
 
-          <div className="divider">
-            <span>or</span>
-          </div>
+          <div className="divider"><span>or</span></div>
 
-          <button className="google-button">
+          <button className="google-button"
+          onClick={() => { 
+              window.location.href = "http://localhost:8000/api/auth/google/login";
+            }}
+          >
             <div className="google-icon">
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
