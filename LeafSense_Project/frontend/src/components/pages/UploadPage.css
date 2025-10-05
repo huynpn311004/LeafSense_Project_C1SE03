@@ -212,6 +212,70 @@
   }
 }
 
+.analysis-results {
+  margin-top: 2rem;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.result-item {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.result-item h5 {
+  color: #111827;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.result-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.classification-result,
+.segmentation-result {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.classification-result h6,
+.segmentation-result h6 {
+  color: #4b5563;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.segment {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.segment p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+@media (max-width: 768px) {
+  .result-content {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 480px) {
   .upload-area {
     padding: 1.5rem 1rem;

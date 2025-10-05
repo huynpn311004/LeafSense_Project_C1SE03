@@ -5,6 +5,7 @@
   width: 100vw;
   background-color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  overflow: hidden;
 }
 
 /* Sidebar */
@@ -18,11 +19,12 @@
 }
 
 .sidebar-header {
-  padding: 2rem 1.5rem 1rem;
+  padding: 1.5rem 1.5rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  height: 80px;
+  height: 70px;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .logo-text {
@@ -82,8 +84,78 @@
 }
 
 .sidebar-footer {
-  padding: 1rem 1.5rem 2rem;
+  padding: 1rem 1.5rem 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+/* User Info Section */
+.user-info {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logout-button {
@@ -117,17 +189,18 @@
 }
 
 .content-header {
-  padding: 2rem 2rem 1rem;
+  padding: 1.5rem 2rem 1rem;
   border-bottom: 1px solid #e5e7eb;
   background-color: #ffffff;
-  height: 80px;
+  height: 70px;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .page-title {
   color: #111827;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.025em;
@@ -135,9 +208,10 @@
 
 .content-body {
   flex: 1;
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   overflow-y: auto;
   background-color: #f9fafb;
+  min-height: 0;
 }
 
 /* Responsive Design */
@@ -207,6 +281,38 @@
     padding: 1rem;
     border-top: none;
     border-left: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+    width: 100%;
+  }
+  
+  .user-avatar {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+    width: 35px;
+    height: 35px;
+  }
+  
+  .user-details {
+    width: 100%;
+  }
+  
+  .user-name {
+    font-size: 0.8rem;
+    margin-bottom: 0.125rem;
+  }
+  
+  .user-email {
+    font-size: 0.7rem;
   }
   
   .logout-button {
