@@ -1,16 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // User info state
+  const [userInfo, setUserInfo] = useState({
+    name: '',
+    email: '',
+    avatar: null
+  });
 
   const menuItems = [
     { id: 'Dashboard', label: 'Dashboard', icon: 'grid', path: '/' },
     { id: 'Upload', label: 'Upload', icon: 'upload', path: '/upload' },
     { id: 'History', label: 'History', icon: 'history', path: '/history' },
     { id: 'Marketplace', label: 'Marketplace', icon: 'shopping', path: '/marketplace' },
+    { id: 'Orders', label: 'Order History', icon: 'orders', path: '/orders' },
     { id: 'Community', label: 'Community', icon: 'community', path: '/community' },
     { id: 'Chatbot', label: 'Chatbot', icon: 'chat', path: '/chatbot' },
     { id: 'Setting', label: 'Setting', icon: 'settings', path: '/settings' }
@@ -24,6 +32,7 @@ const Layout = ({ children }) => {
       case '/upload': return 'Upload';
       case '/history': return 'History';
       case '/marketplace': return 'Marketplace';
+      case '/orders': return 'Orders';
       case '/community': return 'Community';
       case '/chatbot': return 'Chatbot';
       case '/settings': return 'Setting';
@@ -37,8 +46,47 @@ const Layout = ({ children }) => {
     navigate(path);
   };
 
+  // Load user info from localStorage on component mount
+  useEffect(() => {
+    // Lấy dữ liệu người dùng từ localStorage khi load
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUserInfo(JSON.parse(savedUser));
+    }
+
+    // Khi localStorage thay đổi (ví dụ người dùng đăng xuất ở tab khác)
+    const handleStorageChange = () => {
+      const updatedUser = localStorage.getItem('user');
+        if (updatedUser) {
+          setUserInfo(JSON.parse(updatedUser));
+        } else {
+          setUserInfo({ name: '', email: '', avatar: null });
+        }
+      };
+
+    const handleProfileUpdated = (e) => {
+      if (e.detail) {
+        setUserInfo(e.detail);
+      }
+    };
+
+    // Đăng ký 2 listener
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('profile-updated', handleProfileUpdated);
+
+    // Gỡ khi component bị unmount
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('profile-updated', handleProfileUpdated);
+    };
+  }, []);
+
   const handleLogout = () => {
     console.log('Logging out...');
+    // Clear user data and redirect to login
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    navigate('/login');
   };
 
   const renderIcon = (iconType) => {
@@ -65,13 +113,20 @@ const Layout = ({ children }) => {
       case 'shopping':
         return (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7,4V2A1,1 0 0,1 8,1H16A1,1 0 0,1 17,2V4H20A1,1 0 0,1 21,5V7A1,1 0 0,1 20,8H19V19A3,3 0 0,1 16,22H8A3,3 0 0,1 5,19V8H4A1,1 0 0,1 3,7V5A1,1 0 0,1 4,4H7M9,3V4H15V3H9M7,6V8H17V6H7M7,10V19A1,1 0 0,0 8,20H16A1,1 0 0,0 17,19V10H7Z"/>
+            <path d="M19,7H16V6A4,4 0 0,0 8,6V7H5A1,1 0 0,0 4,8V19A3,3 0 0,0 7,22H17A3,3 0 0,0 20,19V8A1,1 0 0,0 19,7M10,6A2,2 0 0,1 14,6V7H10V6M18,19A1,1 0 0,1 17,20H7A1,1 0 0,1 6,19V9H8V10A1,1 0 0,0 9,11A1,1 0 0,0 10,10V9H14V10A1,1 0 0,0 15,11A1,1 0 0,0 16,10V9H18V19Z"/>
+          </svg>
+        );
+      case 'orders':
+        return (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+            <path d="M8,12H16V14H8V12M8,16H13V18H8V16Z"/>
           </svg>
         );
       case 'community':
         return (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M16,4C18.21,4 20,5.79 20,8C20,10.21 18.21,12 16,12C15.71,12 15.44,11.97 15.18,11.92L12.5,14.6C12.5,14.6 12.5,14.6 12.5,14.6L12.5,16L16,16C18.21,16 20,17.79 20,20C20,22.21 18.21,24 16,24C13.79,24 12,22.21 12,20C12,19.71 12.03,19.44 12.08,19.18L9.4,16.5C9.4,16.5 9.4,16.5 9.4,16.5L8,16.5C5.79,16.5 4,15.21 4,13C4,10.79 5.79,9 8,9C8.29,9 8.56,9.03 8.82,9.08L11.5,6.4C11.5,6.4 11.5,6.4 11.5,6.4L11.5,5C11.5,2.79 13.29,1 15.5,1C17.71,1 19.5,2.79 19.5,5C19.5,7.21 17.71,9 15.5,9C15.21,9 14.94,8.97 14.68,8.92L12,11.6C12,11.6 12,11.6 12,11.6L12,13C12,15.21 10.21,17 8,17C5.79,17 4,15.21 4,13C4,10.79 5.79,9 8,9Z"/>
+            <path d="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"/>
           </svg>
         );
       case 'chat':
@@ -115,6 +170,29 @@ const Layout = ({ children }) => {
         </nav>
         
         <div className="sidebar-footer">
+          {/* User Info Section */}
+          <div className="user-info">
+            <div className="user-avatar">
+              {userInfo.avatar ? (
+                <img 
+                  src={userInfo.avatar} 
+                  alt="User Avatar" 
+                  className="avatar-image"
+                  onError={(e) => (e.target.src = '/images/default-avatar.png')}
+                />
+              ) : (
+                <div className="avatar-placeholder">
+                  {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
+            </div>
+            <div className="user-details">
+              <div className="user-name">{userInfo.name}</div>
+              <div className="user-email">{userInfo.email}</div>
+            </div>
+          </div>
+          
+          {/* Logout Button */}
           <button className="logout-button" onClick={handleLogout}>
             Log Out
           </button>
@@ -124,7 +202,9 @@ const Layout = ({ children }) => {
       {/* Main Content */}
       <div className="main-content">
         <div className="content-header">
-          <h2 className="page-title">{activeItem}</h2>
+          <h2 className="page-title">
+            {menuItems.find(item => item.id === activeItem)?.label || activeItem}
+          </h2>
         </div>
         <div className="content-body">
           {children}

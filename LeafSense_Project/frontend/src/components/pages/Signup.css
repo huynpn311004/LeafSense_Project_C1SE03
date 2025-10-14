@@ -94,6 +94,27 @@
   text-align: left;
 }
 
+/* Messages */
+.error-message {
+  margin: 0.5rem 0 0 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 6px;
+  background: #fef2f2; /* light red */
+  color: #991b1b;      /* dark red */
+  border: 1px solid #fecaca;
+  font-size: 0.95rem;
+}
+
+.success-message {
+  margin: 0.5rem 0 0 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 6px;
+  background: #ecfdf5; /* light green */
+  color: #065f46;      /* dark green */
+  border: 1px solid #a7f3d0;
+  font-size: 0.95rem;
+}
+
 /* Form styling */
 .signup-form {
   display: flex;

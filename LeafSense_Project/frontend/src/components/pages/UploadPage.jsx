@@ -1,11 +1,13 @@
 import React, { useState, useRef } from 'react';
 import Layout from '../layout/Layout';
+import { analyzeLeafImage } from '../../services/predictionApi';
 import './UploadPage.css';
 
 const UploadPage = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState([]);
   const fileInputRef = useRef(null);
 
   const handleDragOver = (e) => {
@@ -34,13 +36,28 @@ const UploadPage = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     setIsAnalyzing(true);
-    // Simulate analysis process
-    setTimeout(() => {
+    setAnalysisResults([]);
+    
+    try {
+      const results = await Promise.all(
+        uploadedFiles.map(async (file) => {
+          const result = await analyzeLeafImage(file);
+          return {
+            filename: file.name,
+            ...result
+          };
+        })
+      );
+      
+      setAnalysisResults(results);
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      alert('Failed to analyze images. Please try again.');
+    } finally {
       setIsAnalyzing(false);
-      alert('Analysis completed!');
-    }, 3000);
+    }
   };
 
   return (
@@ -91,6 +108,41 @@ const UploadPage = () => {
             >
               {isAnalyzing ? 'Analyzing...' : 'Analyze Images'}
             </button>
+          </div>
+        )}
+
+        {analysisResults.length > 0 && (
+          <div className="analysis-results">
+            <h4>Analysis Results</h4>
+            {analysisResults.map((result, index) => (
+              <div key={index} className="result-item">
+                <h5>{result.filename}</h5>
+                <div className="result-content">
+                  <div className="classification-result">
+                    <h6>Classification Result:</h6>
+                    <p>Disease: {result.classification.class}</p>
+                    <p>Confidence: {(result.classification.confidence * 100).toFixed(2)}%</p>
+                  </div>
+                  {result.highlight_image && (
+                    <div className="highlight-image">
+                      <h6>Highlighted Image:</h6>
+                      <img src={result.highlight_image} alt={`highlight-${result.filename}`} style={{maxWidth: '100%', borderRadius: 8}} />
+                    </div>
+                  )}
+                  {result.segmentation.length > 0 && (
+                    <div className="segmentation-result">
+                      <h6>Detected Regions:</h6>
+                      {result.segmentation.map((seg, idx) => (
+                        <div key={idx} className="segment">
+                          <p>Type: {seg.class}</p>
+                          <p>Confidence: {(seg.confidence * 100).toFixed(2)}%</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -1,11 +1,25 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+import os
+from dotenv import load_dotenv
 
-# Cấu hình MySQL - Thay đổi thông tin theo MySQL của bạn
-# Format: mysql+mysqlclient://username:password@host:port/database_name
-DATABASE_URL = "mysql+mysqlclient://root:785619@localhost:3306/leafsense"
+# Load env early so DATABASE_URL is available at import-time
+load_dotenv()
 
-engine = create_engine(DATABASE_URL, echo=True)
+# Default to SQLite if no DATABASE_URL provided
+os.makedirs("./instance", exist_ok=True)
+db_path = "./instance/leafsense.db"
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
+
+# If using SQLite, we need special connect args; otherwise leave empty
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args=connect_args,
+    echo=True,
+)
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
