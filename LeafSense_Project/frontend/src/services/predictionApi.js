@@ -6,12 +6,21 @@ export const analyzeLeafImage = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
     
+    const token = localStorage.getItem('token');
+    
+    const headers = {
+        'Content-Type': 'multipart/form-data',
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     try {
         const response = await axios.post(`${BASE_URL}/prediction/analyze`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
+            headers: headers,
         });
+        
         return response.data;
     } catch (error) {
         throw new Error('Failed to analyze image');

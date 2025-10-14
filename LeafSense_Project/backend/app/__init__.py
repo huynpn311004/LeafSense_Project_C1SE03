@@ -5,8 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from core.database import Base, engine
-from app.routers import prediction, auth, users  # ✅ chỉ giữ dòng này
-
+from app.routers import prediction, auth, users, history_upload, shop, admin  # Import router mới
+from app.models.users import PasswordResetToken
 def create_app() -> FastAPI:
     # Load env
     load_dotenv()
@@ -47,6 +47,9 @@ def create_app() -> FastAPI:
     app.include_router(prediction.router)
     app.include_router(auth.router, prefix="/api", tags=["Authentication"])
     app.include_router(users.router, prefix="/api/user", tags=["User Management"])
+    app.include_router(history_upload.router, prefix="/api", tags=["History"])
+    app.include_router(shop.router, prefix="/api", tags=["Shop"])
+    app.include_router(admin.router, prefix="/api", tags=["Admin"])
 
     # Health check
     @app.get("/health")

@@ -1,0 +1,227 @@
+/* Treatment Guide Styles */
+.treatment-suggestion {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+}
+
+/* Header Styles */
+.treatment-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.treatment-header h6 {
+  color: #1f2937;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.025em;
+}
+
+.guide-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.guide-icon {
+  font-size: 1.25rem;
+}
+
+.guide-timestamp {
+  font-style: italic;
+}
+
+/* Content Styles */
+.treatment-content {
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.75;
+  letter-spacing: 0.015em;
+}
+
+.section-container {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.section-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1f2937;
+  font-weight: 700;
+  margin: 0 0 1.5rem;
+  font-size: 1.15rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, rgba(243, 244, 246, 0.5) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.section-icon {
+  font-size: 1.5rem;
+}
+
+/* Section-specific colors */
+.section-overview .section-header { 
+  background-color: #eff6ff;
+  border-left: 4px solid #3b82f6; 
+}
+
+.section-causes .section-header {
+  background-color: #fef2f2;
+  border-left: 4px solid #ef4444;
+}
+
+.section-symptoms .section-header {
+  background-color: #fffbeb;
+  border-left: 4px solid #f59e0b;
+}
+
+.section-treatment .section-header {
+  background-color: #ecfdf5;
+  border-left: 4px solid #10b981;
+}
+
+.section-prevention .section-header {
+  background-color: #f5f3ff;
+  border-left: 4px solid #8b5cf6;
+}
+
+/* Bullet Points */
+.bullet-point-container {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0;
+  transition: all 0.2s ease;
+}
+
+.bullet-point {
+  position: relative;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.bullet-point::before {
+  content: "•";
+  color: #10b981;
+  position: absolute;
+  left: 0;
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+.bullet-point-container:hover {
+  background-color: #f9fafb;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+}
+
+/* Text Highlights */
+.highlight-percentage {
+  color: #059669;
+  font-weight: 600;
+  background-color: #ecfdf5;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.highlight-important {
+  color: #dc2626;
+  font-weight: 600;
+  background-color: #fef2f2;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.highlight-measurement {
+  color: #6366f1;
+  font-weight: 500;
+  background-color: #eef2ff;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.content-text {
+  margin: 1rem 0;
+  line-height: 1.8;
+  color: #4b5563;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .treatment-suggestion {
+    padding: 1.5rem;
+  }
+
+  .treatment-header h6 {
+    font-size: 1.25rem;
+  }
+
+  .section-header {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .section-icon {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .section-container {
+    padding: 1rem;
+  }
+
+  .bullet-point {
+    font-size: 0.95rem;
+  }
+
+  .guide-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .treatment-suggestion {
+    padding: 1.5rem;
+  }
+
+  .treatment-suggestion h6 {
+    font-size: 1.25rem;
+  }
+
+  .section-header {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .bullet-point {
+    margin-left: 1rem;
+    padding-left: 1rem;
+  }
+}

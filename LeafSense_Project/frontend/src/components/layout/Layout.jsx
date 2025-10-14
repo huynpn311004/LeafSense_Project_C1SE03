@@ -5,6 +5,22 @@ import './Layout.css';
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    const email = params.get('email');
+    const name = params.get('name');
+    const avatar_url = params.get('avatar_url');
+
+    if (token && email) {
+      const decodedToken = decodeURIComponent(token);
+      localStorage.setItem('token', decodedToken);
+      localStorage.setItem('user', JSON.stringify({ email, name, avatar: avatar_url }));
+
+      // Xóa query string khỏi URL cho gọn
+      window.history.replaceState({}, document.title, '/');
+    }
+  }, [location]);
   
   // User info state
   const [userInfo, setUserInfo] = useState({
@@ -48,21 +64,28 @@ const Layout = ({ children }) => {
 
   // Load user info from localStorage on component mount
   useEffect(() => {
-    // Lấy dữ liệu người dùng từ localStorage khi load
+    // Load dữ liệu từ localStorage
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
-      setUserInfo(JSON.parse(savedUser));
+      const userData = JSON.parse(savedUser);
+      setUserInfo(userData);
     }
+
+    // Load fresh data từ API
+    setTimeout(() => {
+      loadUserProfileFromAPI();
+    }, 100);
 
     // Khi localStorage thay đổi (ví dụ người dùng đăng xuất ở tab khác)
     const handleStorageChange = () => {
       const updatedUser = localStorage.getItem('user');
-        if (updatedUser) {
-          setUserInfo(JSON.parse(updatedUser));
-        } else {
-          setUserInfo({ name: '', email: '', avatar: null });
-        }
-      };
+      if (updatedUser) {
+        const userData = JSON.parse(updatedUser);
+        setUserInfo(userData);
+      } else {
+        setUserInfo({ name: '', email: '', avatar: null });
+      }
+    };
 
     const handleProfileUpdated = (e) => {
       if (e.detail) {
@@ -81,9 +104,55 @@ const Layout = ({ children }) => {
     };
   }, []);
 
+  // ===== AUTO LOAD PROFILE FROM API =====
+  const loadUserProfileFromAPI = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return;
+      }
+      const response = await fetch('http://localhost:8000/api/user/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+
+      // Xử lý avatar URL
+      let avatarUrl = null;
+      if (data.avatar_url) {
+        if (data.avatar_url.startsWith('http')) {
+          avatarUrl = data.avatar_url;
+        } else {
+          avatarUrl = `http://localhost:8000${data.avatar_url}`;
+        }
+      }
+
+      const updatedUserInfo = {
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        address: data.address || '',
+        avatar: avatarUrl,
+        provider: data.provider || 'normal'
+      };
+      
+      setUserInfo(updatedUserInfo);
+      localStorage.setItem('user', JSON.stringify(updatedUserInfo));
+      
+    } catch (error) {
+      // Handle error silently
+    }
+  };
+
   const handleLogout = () => {
-    console.log('Logging out...');
-    // Clear user data and redirect to login
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     navigate('/login');
