@@ -11,7 +11,9 @@ const Signup = () => {
     confirmPassword: ''
   });
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -25,6 +27,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không khớp!');
@@ -36,20 +39,32 @@ const Signup = () => {
     }
 
     try {
-      // Gọi API backend FastAPI
-      const res = await axios.post('http://localhost:8000/api/auth/signup', {
+      setSubmitting(true);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const res = await axios.post(`${API_BASE_URL}/auth/signup`, {
         name: formData.name,
         email: formData.email,
         password: formData.password
-      });
+      }, { timeout: 10000 });
 
       if (res.status === 200 || res.status === 201) {
-        alert('Đăng ký thành công! Hãy đăng nhập để tiếp tục.');
-        navigate('/login');
+        setSuccess('Đăng ký thành công! Đang chuyển tới trang đăng nhập...');
+        // Chờ 1s để người dùng thấy thông báo rồi điều hướng
+        setTimeout(() => navigate('/login'), 1000);
+      } else {
+        setError(`Không thể đăng ký (status ${res.status}). Vui lòng thử lại.`);
       }
     } catch (err) {
       console.error(err);
-      setError('Email đã được sử dụng hoặc có lỗi khi đăng ký.');
+      // Hiển thị thông tin lỗi chi tiết nhất có thể
+      const detail = err?.response?.data?.detail;
+      const message = (typeof detail === 'string' && detail)
+        || (Array.isArray(detail) && detail.map(d => d.msg).join('; '))
+        || err?.message
+        || 'Có lỗi xảy ra khi đăng ký.';
+      setError(message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -73,6 +88,7 @@ const Signup = () => {
           <h2 className="signup-title">Create your account</h2>
 
           {error && <p className="error-message">{error}</p>}
+          {success && <p className="success-message">{success}</p>}
 
           <form onSubmit={handleSubmit} className="signup-form">
             <div className="form-group">
@@ -140,8 +156,8 @@ const Signup = () => {
               </label>
             </div>
 
-            <button type="submit" className="signup-button">
-              Sign Up
+            <button type="submit" className="signup-button" disabled={submitting}>
+              {submitting ? 'Đang xử lý...' : 'Sign Up'}
             </button>
           </form>
 

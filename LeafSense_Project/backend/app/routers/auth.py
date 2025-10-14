@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse
 
-from app.models.users import User 
+from app.models.user import User 
 from app.schemas.user_schema import UserCreate, UserLogin, UserResponse, Token
 from core.database import get_db
 from core.security import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, verify_password, get_password_hash

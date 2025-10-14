@@ -5,7 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from core.database import Base, engine
-from app.routers import prediction, auth, users  # ✅ chỉ giữ dòng này
+# Routers: prediction is optional to avoid heavy deps during shop dev
+try:
+    from app.routers import prediction
+except Exception:
+    prediction = None
+from app.routers import auth, users, shop  # ✅ giữ các router chính
+from app.models import *  # Import all models to register them
 
 def create_app() -> FastAPI:
     # Load env
@@ -21,6 +27,9 @@ def create_app() -> FastAPI:
         os.getenv("FRONTEND_ORIGIN", "http://localhost:5173"),
         "http://localhost:5174",   # vite đôi khi chạy port 5174
         "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:3000",
     ]
 
     app.add_middleware(
@@ -44,9 +53,11 @@ def create_app() -> FastAPI:
     app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
     # Routers
-    app.include_router(prediction.router)
+    if prediction is not None:
+        app.include_router(prediction.router)
     app.include_router(auth.router, prefix="/api", tags=["Authentication"])
     app.include_router(users.router, prefix="/api/user", tags=["User Management"])
+    app.include_router(shop.router, prefix="/api", tags=["Shop"])
 
     # Health check
     @app.get("/health")

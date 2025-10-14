@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from core.database import get_db
-from app.models.users import User
+from app.models.user import User
 
 # =============================
 # Cấu hình JWT & Password Hash

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from core.database import get_db
-from app.models.users import User
+from app.models.user import User
 from app.schemas.user_schema import UserResponse
 from core.security import get_current_user, verify_password, get_password_hash
 from sqlalchemy.exc import SQLAlchemyError
