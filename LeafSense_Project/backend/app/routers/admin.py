@@ -17,6 +17,7 @@ from app.schemas.admin_schema import (
     CategoryCreate, CategoryUpdate, CategoryResponse,
     OrderResponse, OrderUpdate, DashboardStats
 )
+from app.schemas.user_schema import ChangePassword
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -69,6 +70,68 @@ def admin_login(login_data: AdminLogin, db: Session = Depends(get_db)):
 def get_admin_profile(admin: User = Depends(get_admin_user)):
     """Lấy thông tin admin profile"""
     return admin
+
+# ==================== ADMIN SETTINGS ====================
+
+@router.put("/profile", response_model=AdminResponse)
+def update_admin_profile(
+    name: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(None),
+    address: str = Form(None),
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Cập nhật thông tin profile admin"""
+
+    # Cập nhật thông tin cơ bản
+    admin.name = name
+    admin.email = email
+    admin.phone = phone
+    admin.address = address
+
+    try:
+        db.commit()
+        db.refresh(admin)
+        return admin
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
+@router.put("/change-password")
+def change_admin_password(
+    password_data: ChangePassword,
+    admin: User = Depends(get_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Đổi mật khẩu admin"""
+
+    # Kiểm tra xem admin có phải đăng nhập bằng Google không
+    if admin.provider == "google":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Không thể thay đổi mật khẩu cho tài khoản đăng nhập bằng Google"
+        )
+
+    # Kiểm tra mật khẩu cũ
+    if not verify_password(password_data.old_password, admin.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect old password"
+        )
+
+    try:
+        # Hash và cập nhật mật khẩu
+        hashed_password = get_password_hash(password_data.new_password)
+        admin.password = hashed_password
+
+        db.commit()
+        db.refresh(admin)
+        return {"message": "Admin password changed successfully"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== USER MANAGEMENT ====================
 
@@ -134,7 +197,8 @@ def toggle_user_status(
     user.status = "inactive" if user.status == "active" else "active"
     db.commit()
     
-    return {"message": f"User {user.status} successfully", "status": user.status}
+    action = "khóa" if user.status == "inactive" else "mở khóa"
+    return {"message": f"Đã {action} tài khoản user thành công", "status": user.status}
 
 @router.delete("/users/{user_id}")
 def delete_user(

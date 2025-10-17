@@ -1,31 +1,26 @@
 import React, { useState, useEffect } from 'react'
+import ShopService from '../../services/shopApi'
 import './OrderHistory.css'
 
 const OrderHistory = ({ userId }) => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
-
-  const API_BASE_URL = 'http://localhost:8000/api'
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (userId) {
-      fetchOrders()
-    }
-  }, [userId])
+    fetchOrders()
+  }, [])
 
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${API_BASE_URL}/orders?user_id=${userId}`)
+      setError(null)
       
-      if (response.ok) {
-        const data = await response.json()
-        setOrders(data)
-      } else {
-        console.error('Failed to fetch orders')
-      }
+      const ordersData = await ShopService.getUserOrders()
+      setOrders(ordersData || [])
     } catch (error) {
       console.error('Error fetching orders:', error)
+      setError('Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau.')
     } finally {
       setLoading(false)
     }
@@ -44,20 +39,29 @@ const OrderHistory = ({ userId }) => {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    return ShopService.formatDate(dateString)
+  }
+
+  const formatCurrency = (amount) => {
+    return ShopService.formatCurrency(amount)
   }
 
   if (loading) {
     return (
       <div className="order-history-loading">
         <div className="loading-spinner"></div>
-        <p>Loading orders...</p>
+        <p>Đang tải lịch sử đơn hàng...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="order-history-empty">
+        <p>{error}</p>
+        <button onClick={fetchOrders} className="retry-btn">
+          Thử lại
+        </button>
       </div>
     )
   }
@@ -65,48 +69,48 @@ const OrderHistory = ({ userId }) => {
   if (orders.length === 0) {
     return (
       <div className="order-history-empty">
-        <p>You haven't placed any orders yet.</p>
+        <p>Bạn chưa có đơn hàng nào.</p>
       </div>
     )
   }
 
   return (
     <div className="order-history">
-      <h2>Order History</h2>
+      <h2>Lịch sử đơn hàng</h2>
       
       <div className="orders-list">
         {orders.map(order => (
           <div key={order.id} className="order-card">
             <div className="order-header">
               <div className="order-info">
-                <h3>Order #{order.id}</h3>
+                <h3>Đơn hàng #{order.id}</h3>
                 <p className="order-date">{formatDate(order.created_at)}</p>
               </div>
               <div className="order-status">
                 <span className={getStatusBadge(order.status)}>
-                  {order.status.toUpperCase()}
+                  {ShopService.getOrderStatusText(order.status)}
                 </span>
               </div>
             </div>
             
             <div className="order-details">
               <div className="shipping-info">
-                <h4>Shipping Information</h4>
-                <p><strong>Name:</strong> {order.shipping_name}</p>
-                <p><strong>Phone:</strong> {order.shipping_phone}</p>
-                <p><strong>Address:</strong> {order.shipping_address}</p>
-                <p><strong>Payment:</strong> {order.payment_method}</p>
+                <h4>Thông tin giao hàng</h4>
+                <p><strong>Người nhận:</strong> {order.shipping_name}</p>
+                <p><strong>Số điện thoại:</strong> {order.shipping_phone}</p>
+                <p><strong>Địa chỉ:</strong> {order.shipping_address}</p>
+                <p><strong>Thanh toán:</strong> {ShopService.getPaymentMethodText(order.payment_method)}</p>
               </div>
               
               {order.order_items && order.order_items.length > 0 && (
                 <div className="order-items">
-                  <h4>Items ({order.order_items.length})</h4>
+                  <h4>Sản phẩm ({order.order_items.length})</h4>
                   <div className="items-list">
                     {order.order_items.map(item => (
                       <div key={item.id} className="order-item">
                         <span className="item-name">{item.product.name}</span>
                         <span className="item-quantity">x{item.quantity}</span>
-                        <span className="item-price">${parseFloat(item.price).toFixed(2)}</span>
+                        <span className="item-price">{formatCurrency(item.price)}</span>
                       </div>
                     ))}
                   </div>
@@ -114,7 +118,7 @@ const OrderHistory = ({ userId }) => {
               )}
               
               <div className="order-total">
-                <strong>Total: ${parseFloat(order.total_amount).toFixed(2)}</strong>
+                <strong>Tổng cộng: {formatCurrency(order.total_amount)}</strong>
               </div>
             </div>
           </div>

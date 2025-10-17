@@ -39,16 +39,27 @@ const AdminUsers = () => {
   }
 
   const handleToggleStatus = async (userId) => {
+    const user = users.find(u => u.id === userId)
+    const action = user?.status === 'active' ? 'khóa' : 'mở khóa'
+    
+    if (user?.status === 'active' && !window.confirm(
+      `Bạn có chắc chắn muốn khóa tài khoản của "${user?.name}"?\n\n` +
+      `User sẽ không thể đăng nhập và sẽ nhận được thông báo liên hệ email hỗ trợ.`
+    )) {
+      return
+    }
+    
     try {
       const token = localStorage.getItem('token')
-      await axios.put(`http://localhost:8000/api/admin/users/${userId}/status`, {}, {
+      const response = await axios.put(`http://localhost:8000/api/admin/users/${userId}/status`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      toast.success('Cập nhật trạng thái thành công')
+      
+      toast.success(response.data.message || `Đã ${action} tài khoản thành công`)
       fetchUsers()
     } catch (error) {
       console.error('Error updating user status:', error)
-      toast.error('Cập nhật trạng thái thất bại')
+      toast.error(`${action === 'khóa' ? 'Khóa' : 'Mở khóa'} tài khoản thất bại`)
     }
   }
 
@@ -127,6 +138,12 @@ const AdminUsers = () => {
           onClick={() => navigate('/admin/categories')}
         >
           Quản lý Danh mục
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/coupons')}
+        >
+          Quản lý Mã giảm giá
         </button>
       </div>
 

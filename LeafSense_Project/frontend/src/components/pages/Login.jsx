@@ -26,6 +26,7 @@ const Login = () => {
         
         localStorage.setItem('token', access_token);
         localStorage.setItem('user', JSON.stringify({
+          id: user.id, // Add user ID for cart functionality
           name: user.name,
           email: user.email,
           avatar_url: user.avatar_url || '',
@@ -46,7 +47,16 @@ const Login = () => {
         }, 1000);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Login error:', err);
+      console.error('Error response:', err.response);
+      
+      // Kiểm tra nếu tài khoản bị khóa (status 403)
+      if (err.response && err.response.status === 403) {
+        console.log('Account locked - redirecting to /account-locked');
+        navigate('/account-locked');
+        return;
+      }
+      
       setError('Sai email hoặc mật khẩu!');
       setSuccess('');
     }

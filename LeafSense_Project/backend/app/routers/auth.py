@@ -59,6 +59,13 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Kiểm tra tài khoản có bị khóa không
+    if db_user.status == "inactive":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản của bạn đã bị khóa. Vui lòng liên hệ email leafsensehotro@gmail.com.vn để được mở tài khoản",
+        )
+
     # Tạo access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -118,6 +125,12 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
 
+        # Kiểm tra tài khoản có bị khóa không
+        if user.status == "inactive":
+            # Redirect về frontend với thông báo lỗi
+            error_url = "http://localhost:5173/account-locked"
+            return RedirectResponse(url=error_url)
+
         # 🔑 Tạo JWT token
         expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(data={"sub": user.email}, expires_delta=expires)
@@ -127,6 +140,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             f"http://localhost:5173/?"
             f"token={quote(access_token)}&email={quote(user.email)}"
             f"&name={quote(user.name or '')}&avatar_url={quote(user.avatar_url or '')}"
+            f"&user_id={user.id}"
         )
 
         return RedirectResponse(url=redirect_url)

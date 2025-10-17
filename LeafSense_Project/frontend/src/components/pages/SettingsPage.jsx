@@ -61,7 +61,9 @@ const SettingsPage = () => {
       }
       
       // Cập nhật userInfo với dữ liệu từ API
+      const currentUser = JSON.parse(localStorage.getItem('user')) || {};
       const updatedUserInfo = {
+        id: data.id || currentUser.id, // Preserve user ID
         name: data.name || '',
         email: data.email || '',
         phone: data.phone || '',
@@ -322,6 +324,7 @@ const SettingsPage = () => {
 
       
       const updatedUser = {
+        id: data.id || userInfo.id, // Preserve user ID
         name: data.name || userInfo.name,
         email: data.email || userInfo.email,
         phone: data.phone || userInfo.phone,

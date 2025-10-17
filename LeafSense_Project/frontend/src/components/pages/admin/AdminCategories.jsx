@@ -165,6 +165,12 @@ const AdminCategories = () => {
         >
           Quản lý Danh mục
         </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/coupons')}
+        >
+          Quản lý Mã giảm giá
+        </button>
       </div>
 
       <div className="categories-controls">

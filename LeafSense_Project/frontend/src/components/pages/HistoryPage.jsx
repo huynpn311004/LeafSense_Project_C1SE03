@@ -4,7 +4,6 @@ import './HistoryPage.css'
 
 const HistoryPage = () => {
   const [filter, setFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('month')
   const [historyData, setHistoryData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -59,7 +58,6 @@ const HistoryPage = () => {
         highlight_image: item.highlight_image || null,
         disease: item.disease || 'Unknown',
         confidence: Math.round(item.confidence || 0),
-        severity: item.severity || 'Unknown',
         date: item.date || '',
         time: item.time || '',
         month: item.month || '',
@@ -98,20 +96,7 @@ const HistoryPage = () => {
     fetchHistoryData()
   }, [])
 
-  const getSeverityColor = (severity) => {
-    switch (severity.toLowerCase()) {
-      case 'severe':
-        return '#ef4444'
-      case 'moderate':
-        return '#f59e0b'
-      case 'mild':
-        return '#10b981'
-      case 'none':
-        return '#6b7280'
-      default:
-        return '#6b7280'
-    }
-  }
+
 
   const getConfidenceColor = (confidence) => {
     if (confidence >= 90) return '#10b981'
@@ -165,7 +150,6 @@ LeafSense Analysis Report
 Analysis ID: ${item.id}
 Disease Detected: ${item.disease}
 Confidence Level: ${item.confidence}%
-Severity: ${item.severity}
 Analysis Date: ${item.date} ${item.time}
 
 Treatment Recommendation:
@@ -250,28 +234,9 @@ Generated on: ${new Date().toLocaleString()}
     return item.disease.toLowerCase() === filter.toLowerCase()
   })
 
-  // Sort data based on selected sort option
+  // Sort by date (newest first) by default
   const sortedData = [...filteredData].sort((a, b) => {
-    switch (sortBy) {
-      case 'date':
-        // Sort by date (newest first)
-        return new Date(b.date) - new Date(a.date)
-      case 'month':
-        // Sort by month (newest first)
-        return new Date(b.date) - new Date(a.date)
-      case 'confidence':
-        // Sort by confidence (highest first)
-        return b.confidence - a.confidence
-      case 'severity':
-        // Sort by severity (Severe > Moderate > Mild > None)
-        const severityOrder = { 'Severe': 4, 'Moderate': 3, 'Mild': 2, 'None': 1 }
-        return severityOrder[b.severity] - severityOrder[a.severity]
-      case 'disease':
-        // Sort by disease name (alphabetical)
-        return a.disease.localeCompare(b.disease)
-      default:
-        return 0
-    }
+    return new Date(b.date) - new Date(a.date)
   })
 
   // Hiển thị loading nếu đang tải dữ liệu
@@ -334,13 +299,28 @@ Generated on: ${new Date().toLocaleString()}
   return (
     <Layout>
       <div className="history-page">
-        <div className="history-header">
-          <div className="header-left">
-            <h1>History of Analysis</h1>
-            <button className="refresh-btn" onClick={refreshData} title="Refresh data">
-              🔄
-            </button>
+        <div className="history-summary">
+          <div className="summary-card">
+            <div className="summary-value">{historyData.length}</div>
+            <div className="summary-label">Total Analysis</div>
           </div>
+          <div className="summary-card">
+            <div className="summary-value">
+              {filteredData.length}
+            </div>
+            <div className="summary-label">
+              {filter === 'all' ? 'All Results' : `${filter.charAt(0).toUpperCase() + filter.slice(1)} Results`}
+            </div>
+          </div>
+          <div className="summary-card">
+            <div className="summary-value">
+              {filteredData.length > 0 ? Math.round(filteredData.reduce((acc, item) => acc + item.confidence, 0) / filteredData.length) : 0}%
+            </div>
+            <div className="summary-label">Avg. Confidence</div>
+          </div>
+        </div>
+
+        <div className="history-header">
           <div className="history-controls">
             <div className="filter-group">
               <label htmlFor="filter">Filter by:</label>
@@ -352,48 +332,16 @@ Generated on: ${new Date().toLocaleString()}
               >
                 <option value="all">All Analysis</option>
                 <option value="miner">Miner</option>
-                <option value="nodisease">No Disease</option>
+                <option value="nodisease">Nodisease</option>
                 <option value="phoma">Phoma</option>
                 <option value="rust">Rust</option>
-              </select>
-            </div>
-            <div className="sort-group">
-              <label htmlFor="sort">Sort by:</label>
-              <select 
-                id="sort" 
-                value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value)}
-                className="sort-select"
-              >
-                <option value="month">Month (Newest)</option>
+                <option value="unknown">Unknown</option>
               </select>
             </div>
           </div>
         </div>
 
         <div className="history-content">
-          {historyData.length > 0 && (
-            <div className="history-summary">
-              <div className="summary-card">
-                <div className="summary-value">{historyData.length}</div>
-                <div className="summary-label">Total Analysis</div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-value">
-                  {filteredData.length}
-                </div>
-                <div className="summary-label">
-                  {filter === 'all' ? 'All Results' : `${filter.charAt(0).toUpperCase() + filter.slice(1)} Results`}
-                </div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-value">
-                  {filteredData.length > 0 ? Math.round(filteredData.reduce((acc, item) => acc + item.confidence, 0) / filteredData.length) : 0}%
-                </div>
-                <div className="summary-label">Avg. Confidence</div>
-              </div>
-            </div>
-          )}
           
           <div className="history-table-container">
             <table className="history-table">
@@ -402,7 +350,6 @@ Generated on: ${new Date().toLocaleString()}
                   <th>Image</th>
                   <th>Disease</th>
                   <th>Confidence</th>
-                  <th>Severity</th>
                   <th>Date</th>
                   <th>Actions</th>
                 </tr>
@@ -447,21 +394,10 @@ Generated on: ${new Date().toLocaleString()}
                         </div>
                       </div>
                     </td>
-                    <td className="severity-cell">
-                      <span 
-                        className="severity-badge"
-                        style={{ backgroundColor: getSeverityColor(item.severity) }}
-                      >
-                        {item.severity}
-                      </span>
-                    </td>
                     <td className="date-cell">
                       <div className="date-info">
                         <span className="date">{item.date}</span>
                         <span className="time">{item.time}</span>
-                        {sortBy === 'month' && (
-                          <span className="month-info">{item.month}</span>
-                        )}
                       </div>
                     </td>
                     <td className="actions-cell">
@@ -495,25 +431,12 @@ Generated on: ${new Date().toLocaleString()}
 
           {sortedData.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">📊</div>
               <h3>
                 {filter === 'all' 
                   ? 'No Analysis History' 
                   : `No ${filter === 'nodisease' ? 'Healthy' : filter.charAt(0).toUpperCase() + filter.slice(1)} Analysis Found`
                 }
               </h3>
-              <p>
-                {filter === 'all' 
-                  ? 'You haven\'t performed any plant analysis yet.' 
-                  : `No analysis results found for ${filter === 'nodisease' ? 'healthy plants' : filter.toLowerCase()}.`
-                }
-              </p>
-              <button 
-                className="start-analysis-btn"
-                onClick={() => window.location.href = '/prediction'}
-              >
-                {filter === 'all' ? 'Start Your First Analysis' : 'View All Analysis'}
-              </button>
             </div>
           )}
         </div>

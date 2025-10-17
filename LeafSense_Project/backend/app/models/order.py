@@ -21,6 +21,10 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     total_amount = Column(DECIMAL(10, 2), nullable=False)
+    original_amount = Column(DECIMAL(10, 2), nullable=True)  # Số tiền gốc trước khi giảm
+    discount_amount = Column(DECIMAL(10, 2), default=0)  # Số tiền được giảm
+    coupon_id = Column(Integer, ForeignKey("coupons.id"), nullable=True)  # Mã giảm giá áp dụng
+    coupon_code = Column(String(50), nullable=True)  # Backup mã coupon
     status = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
     payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.COD)
     shipping_name = Column(String(100))
@@ -32,3 +36,4 @@ class Order(Base):
   # Relationships
     user = relationship("User", back_populates="orders")
     order_items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    coupon = relationship("Coupon", backref="orders")

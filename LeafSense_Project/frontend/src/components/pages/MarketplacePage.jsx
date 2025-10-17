@@ -1,19 +1,72 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../layout/Layout'
 import './MarketplacePage.css'
 
 const MarketplacePage = () => {
+  const navigate = useNavigate()
+  
   // ===== STATE MANAGEMENT =====
   const [products, setProducts] = useState([])
   const [cart, setCart] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const [cartCount, setCartCount] = useState(0)
+
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
+  const [notification, setNotification] = useState(null)
 
   // ===== API INTEGRATION =====
   const API_BASE_URL = 'http://localhost:8000/api'
+
+  // ===== NOTIFICATION SYSTEM =====
+  const showNotification = (message, type = 'success') => {
+    // Clear any existing notification first
+    setNotification(null)
+    
+    // Small delay to ensure clean state
+    setTimeout(() => {
+      setNotification({ message, type })
+      // Auto-hide after 3 seconds
+      setTimeout(() => setNotification(null), 3000)
+    }, 50)
+  }
+
+  // ===== SYNC CART FROM LOCALSTORAGE =====
+  useEffect(() => {
+    const syncCartFromStorage = () => {
+      try {
+        const savedCart = localStorage.getItem('marketplaceCart')
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart)
+          setCart(parsedCart)
+        }
+      } catch (error) {
+        console.error('Lỗi khi đồng bộ giỏ hàng từ localStorage:', error)
+      }
+    }
+
+    // Đồng bộ khi component mount
+    syncCartFromStorage()
+
+    // Lắng nghe sự thay đổi localStorage
+    const handleStorageChange = (e) => {
+      if (e.key === 'marketplaceCart') {
+        try {
+          const newCartData = e.newValue ? JSON.parse(e.newValue) : []
+          setCart(newCartData)
+        } catch (error) {
+          console.error('Lỗi khi đồng bộ giỏ hàng:', error)
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [])
   
   // Fetch categories from backend
   const fetchCategories = async () => {
@@ -25,37 +78,6 @@ const MarketplacePage = () => {
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
-    }
-  }
-  
-  // Fetch cart from backend
-  const fetchCart = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'))
-      if (!user) return
-
-      const response = await fetch(`${API_BASE_URL}/cart?user_id=${user.id}`)
-      if (response.ok) {
-        const cartData = await response.json()
-        // Convert backend cart format to frontend format
-        if (cartData.cart_items && cartData.cart_items.length > 0) {
-          const formattedCart = cartData.cart_items.map(item => ({
-            id: item.product.id,
-            cartItemId: item.id, // Store cart item ID for updates/deletes
-            name: item.product.name,
-            price: parseFloat(item.product.price),
-            image: item.product.image_url || '/api/placeholder/200/200',
-            description: item.product.description,
-            quantity: item.quantity,
-            stock: item.product.stock
-          }))
-          setCart(formattedCart)
-        } else {
-          setCart([]) // Clear cart if no items
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching cart:', error)
     }
   }
   
@@ -103,166 +125,49 @@ const MarketplacePage = () => {
   }
 
   // ===== CART FUNCTIONS =====
-  const addToCart = async (product) => {
+  const addToCart = (product) => {
     try {
       const user = JSON.parse(localStorage.getItem('user'))
       if (!user) {
-        alert('Please login to add items to cart')
+        showNotification('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng', 'warning')
         return
       }
 
-      // Fix: user_id should be query parameter, not in body
-      const response = await fetch(`${API_BASE_URL}/cart/items?user_id=${user.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          product_id: product.id,
-          quantity: 1
-        })
-      })
-
-      if (response.ok) {
-        const cartItem = await response.json()
-        
-        // Update local cart state with backend response
-        const existingItem = cart.find(item => item.id === product.id)
-        
-        if (existingItem) {
-          // Update existing item
-          setCart(cart.map(item =>
-            item.id === product.id
-              ? { ...item, quantity: cartItem.quantity, cartItemId: cartItem.id }
-              : item
-          ))
-        } else {
-          // Add new item
-          setCart([...cart, { 
-            ...product, 
-            quantity: cartItem.quantity,
-            cartItemId: cartItem.id
-          }])
+      // Get current cart from localStorage to ensure latest state
+      const currentCart = JSON.parse(localStorage.getItem('marketplaceCart') || '[]')
+      
+      // Check if item already exists in current cart
+      const existingItemIndex = currentCart.findIndex(item => item.id === product.id)
+      
+      let updatedCart
+      if (existingItemIndex !== -1) {
+        // Update existing item quantity
+        updatedCart = [...currentCart]
+        updatedCart[existingItemIndex] = {
+          ...updatedCart[existingItemIndex],
+          quantity: updatedCart[existingItemIndex].quantity + 1
         }
-        
-        alert(`${product.name} đã được thêm vào giỏ hàng!`)
+        showNotification(`Đã tăng số lượng ${product.name} trong giỏ hàng!`, 'success')
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to add to cart')
+        // Add new item to cart
+        updatedCart = [...currentCart, { ...product, quantity: 1 }]
+        showNotification(`${product.name} đã được thêm vào giỏ hàng!`, 'success')
       }
+      
+      // Update state and localStorage simultaneously
+      setCart(updatedCart)
+      localStorage.setItem('marketplaceCart', JSON.stringify(updatedCart))
+      
     } catch (error) {
       console.error('Error adding to cart:', error)
-      alert('Failed to add item to cart')
+      showNotification('❌ Không thể thêm sản phẩm vào giỏ hàng', 'error')
     }
   }
 
-  const removeFromCart = async (productId) => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'))
-      if (!user) return
 
-      const item = cart.find(item => item.id === productId)
-      if (!item || !item.cartItemId) return
-
-      // If quantity > 1, update quantity; otherwise remove item
-      if (item.quantity > 1) {
-        // Update quantity
-        const updateResponse = await fetch(`${API_BASE_URL}/cart/items/${item.cartItemId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quantity: item.quantity - 1 })
-        })
-        
-        if (updateResponse.ok) {
-          setCart(cart.map(cartItem =>
-            cartItem.id === productId
-              ? { ...cartItem, quantity: cartItem.quantity - 1 }
-              : cartItem
-          ))
-        } else {
-          throw new Error('Failed to update cart item')
-        }
-      } else {
-        // Remove item completely
-        const deleteResponse = await fetch(`${API_BASE_URL}/cart/items/${item.cartItemId}`, {
-          method: 'DELETE'
-        })
-        
-        if (deleteResponse.ok) {
-          setCart(cart.filter(cartItem => cartItem.id !== productId))
-        } else {
-          throw new Error('Failed to remove cart item')
-        }
-      }
-    } catch (error) {
-      console.error('Error removing from cart:', error)
-      alert('Failed to remove item from cart')
-    }
-  }
 
   const getTotalPrice = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0)
-  }
-
-  const checkout = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'))
-      if (!user) {
-        alert('Please login to checkout')
-        return
-      }
-
-      if (cart.length === 0) {
-        alert('Your cart is empty')
-        return
-      }
-
-      // Get shipping information
-      const shippingName = prompt('Enter your name:')
-      const shippingPhone = prompt('Enter your phone:')
-      const shippingAddress = prompt('Enter your address:')
-
-      if (!shippingName || !shippingPhone || !shippingAddress) {
-        alert('Please provide all shipping information')
-        return
-      }
-
-      const orderItems = cart.map(item => ({
-        product_id: item.id,
-        quantity: item.quantity,
-        price: item.price
-      }))
-
-      // Fix: user_id should be query parameter, remove total_amount from body
-      const response = await fetch(`${API_BASE_URL}/orders?user_id=${user.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          payment_method: 'COD',
-          shipping_name: shippingName,
-          shipping_phone: shippingPhone,
-          shipping_address: shippingAddress,
-          order_items: orderItems
-        })
-      })
-
-      if (response.ok) {
-        const orderData = await response.json()
-        alert(`Order #${orderData.id} placed successfully! Total: $${orderData.total_amount}`)
-        // Clear local cart and reload from server
-        setCart([])
-        await fetchCart()
-        await fetchProducts() // Reload products to update stock
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to place order')
-      }
-    } catch (error) {
-      console.error('Error placing order:', error)
-      alert('Failed to place order')
-    }
   }
 
   // ===== SEARCH & FILTER HANDLERS =====
@@ -280,12 +185,7 @@ const MarketplacePage = () => {
   useEffect(() => {
     fetchProducts()
     fetchCategories()
-    fetchCart() // Load cart on page load
   }, [])
-
-  useEffect(() => {
-    setCartCount(cart.reduce((total, item) => total + item.quantity, 0))
-  }, [cart])
 
   // ===== RENDER LOADING =====
   if (loading) {
@@ -305,12 +205,29 @@ const MarketplacePage = () => {
   return (
     <Layout>
       <div className="marketplace-page">
+        {/* NOTIFICATION */}
+        {notification && (
+          <div className={`notification ${notification.type}`}>
+            <div className="notification-content">
+              <span className="notification-message">{notification.message}</span>
+            </div>
+          </div>
+        )}
+
         {/* HEADER */}
         <div className="marketplace-header">
           <h1>Marketplace</h1>
           <div className="header-actions">
-            <div className="cart-icon" onClick={() => alert(`Giỏ hàng: ${cartCount} sản phẩm - Tổng: $${getTotalPrice().toFixed(2)}`)}>
-              <span className="cart-count">{cartCount}</span>
+            <div 
+              className={`cart-icon ${cart.length > 0 ? 'has-items' : ''}`}
+              onClick={() => {
+                // Lưu giỏ hàng hiện tại vào localStorage trước khi chuyển trang
+                localStorage.setItem('marketplaceCart', JSON.stringify(cart))
+                navigate('/cart')
+              }}
+              title={`Giỏ hàng: ${cart.length} sản phẩm - Tổng: $${getTotalPrice().toFixed(2)}`}
+            >
+              <span className="cart-count">{cart.length}</span>
               🛒
             </div>
           </div>
@@ -344,8 +261,10 @@ const MarketplacePage = () => {
               </div>
             </div>
 
-            {/* PRODUCTS GRID */}
-            <div className="products-grid">
+            {/* PRODUCTS SECTION */}
+            <div className="products-section">
+              {/* PRODUCTS GRID */}
+              <div className="products-grid">
               {products.length === 0 ? (
                 <div className="no-products">
                   <p>Không có sản phẩm nào được tìm thấy.</p>
@@ -398,28 +317,8 @@ const MarketplacePage = () => {
               )}
             </div>
 
-            {/* CART SUMMARY */}
-            {cart.length > 0 && (
-              <div className="cart-summary">
-                <h3>Cart Summary</h3>
-                <div className="cart-items">
-                  {cart.map(item => (
-                    <div key={item.id} className="cart-item">
-                      <span>{item.name} x{item.quantity}</span>
-                      <span>${(item.price * item.quantity).toFixed(2)}</span>
-                      <button onClick={() => removeFromCart(item.id)}>Remove</button>
-                    </div>
-                  ))}
-                </div>
-                <div className="cart-total">
-                  <strong>Total: ${getTotalPrice().toFixed(2)}</strong>
-                </div>
-                <button className="checkout-btn" onClick={checkout}>
-                  Checkout
-                </button>
-              </div>
-            )}
-      </div>
+            </div> {/* End products-section */}
+      </div> {/* End marketplace-page */}
     </Layout>
   )
 }

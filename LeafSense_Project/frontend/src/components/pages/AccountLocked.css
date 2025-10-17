@@ -1,0 +1,322 @@
+/* AccountLocked.css */
+
+/* Container chính */
+.account-locked-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fef2f2 0%, #fef3e6 50%, #fef7ed 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.account-locked-content {
+  max-width: 28rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Header section */
+.header-section {
+  text-align: center;
+}
+
+.lock-icon-container {
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 6rem;
+  width: 6rem;
+  border-radius: 50%;
+  background-color: #fee2e2;
+  margin-bottom: 1.5rem;
+  animation: pulse-lock 2s infinite;
+}
+
+.lock-icon {
+  height: 3rem;
+  width: 3rem;
+  color: #dc2626;
+}
+
+@keyframes pulse-lock {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 20px rgba(220, 38, 38, 0);
+  }
+}
+
+.main-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+/* Card styles */
+.info-card {
+  background-color: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid #f3f4f6;
+  transition: all 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.message-card {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(135deg, #ffffff 0%, #fef7f7 100%);
+}
+
+.contact-card {
+  border-left: 4px solid #3b82f6;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+/* Message section */
+.message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.warning-icon {
+  height: 1.5rem;
+  width: 1.5rem;
+  color: #ef4444;
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.message-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.message-text {
+  color: #4b5563;
+  line-height: 1.75;
+  font-size: 0.95rem;
+}
+
+/* Contact section */
+.contact-content {
+  text-align: center;
+}
+
+.mail-icon {
+  height: 2rem;
+  width: 2rem;
+  color: #3b82f6;
+  margin: 0 auto 0.75rem;
+}
+
+.contact-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.contact-description {
+  color: #6b7280;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.email-container {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #bfdbfe;
+}
+
+.email-link {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 1.125rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.email-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.contact-note {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Instructions section */
+.instructions-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.instructions-title {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.instructions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.instructions-item {
+  font-size: 0.875rem;
+  color: #78350f;
+  margin-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  position: relative;
+}
+
+.instructions-item::before {
+  content: '•';
+  color: #f59e0b;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+/* Back to login */
+.back-to-login {
+  text-align: center;
+}
+
+.back-to-login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transition: all 0.2s ease;
+}
+
+.back-to-login-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+  color: white;
+}
+
+.login-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+/* Footer */
+.footer-note {
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .account-locked-content {
+    gap: 1.5rem;
+  }
+  
+  .main-title {
+    font-size: 1.75rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .info-card {
+    padding: 1.25rem;
+  }
+  
+  .lock-icon-container {
+    height: 5rem;
+    width: 5rem;
+  }
+  
+  .lock-icon {
+    height: 2.5rem;
+    width: 2.5rem;
+  }
+}
+
+/* Loading animation */
+.fade-in {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hover effects for cards */
+.info-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.info-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s ease;
+}
+
+.info-card:hover::before {
+  left: 100%;
+}

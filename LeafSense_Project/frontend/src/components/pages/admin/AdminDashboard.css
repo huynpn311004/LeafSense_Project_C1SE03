@@ -75,7 +75,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
 }
@@ -114,6 +114,14 @@
 
 .stat-icon.revenue {
   background: #e8f5e8;
+}
+
+.stat-icon.coupons {
+  background: #fff8e1;
+}
+
+.stat-icon.discount {
+  background: #fce4ec;
 }
 
 .stat-content h3 {

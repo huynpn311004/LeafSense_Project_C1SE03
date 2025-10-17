@@ -11,11 +11,17 @@ const Layout = ({ children }) => {
     const email = params.get('email');
     const name = params.get('name');
     const avatar_url = params.get('avatar_url');
+    const user_id = params.get('user_id');
 
     if (token && email) {
       const decodedToken = decodeURIComponent(token);
       localStorage.setItem('token', decodedToken);
-      localStorage.setItem('user', JSON.stringify({ email, name, avatar: avatar_url }));
+      localStorage.setItem('user', JSON.stringify({ 
+        id: user_id ? parseInt(user_id) : undefined,
+        email, 
+        name, 
+        avatar: avatar_url 
+      }));
 
       // Xóa query string khỏi URL cho gọn
       window.history.replaceState({}, document.title, '/');
@@ -48,7 +54,9 @@ const Layout = ({ children }) => {
       case '/upload': return 'Upload';
       case '/history': return 'History';
       case '/marketplace': return 'Marketplace';
+      case '/cart': return 'Cart';
       case '/orders': return 'Orders';
+      case '/checkout': return 'Checkout';
       case '/community': return 'Community';
       case '/chatbot': return 'Chatbot';
       case '/settings': return 'Setting';
@@ -135,7 +143,9 @@ const Layout = ({ children }) => {
         }
       }
 
+      const currentUser = JSON.parse(localStorage.getItem('user')) || {};
       const updatedUserInfo = {
+        id: data.id || currentUser.id, // Preserve user ID
         name: data.name || '',
         email: data.email || '',
         phone: data.phone || '',

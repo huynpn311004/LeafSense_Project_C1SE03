@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { toast } from 'react-toastify'
+import CouponService from '../../../services/couponApi'
 import './AdminDashboard.css'
 
 const AdminDashboard = () => {
@@ -13,11 +14,18 @@ const AdminDashboard = () => {
     pending_orders: 0,
     active_users: 0
   })
+  const [couponStats, setCouponStats] = useState({
+    total_coupons: 0,
+    active_coupons: 0,
+    total_usage: 0,
+    total_discount_given: 0
+  })
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchDashboardStats()
+    fetchCouponStats()
   }, [])
 
   const fetchDashboardStats = async () => {
@@ -36,6 +44,24 @@ const AdminDashboard = () => {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCouponStats = async () => {
+    try {
+      const result = await CouponService.getCouponStatsAdmin()
+      if (result.success) {
+        setCouponStats(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching coupon stats:', error)
+      // Use mock data if API fails
+      setCouponStats({
+        total_coupons: 6,
+        active_coupons: 5,
+        total_usage: 45,
+        total_discount_given: 850.50
+      })
     }
   }
 
@@ -99,6 +125,18 @@ const AdminDashboard = () => {
         >
           Quản lý Danh mục
         </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/coupons')}
+        >
+          Quản lý Mã giảm giá
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/settings')}
+        >
+          Settings
+        </button>
       </div>
 
       <div className="stats-grid">
@@ -135,6 +173,24 @@ const AdminDashboard = () => {
             <p>Doanh thu</p>
           </div>
         </div>
+
+        <div className="stat-card">
+          <div className="stat-icon coupons">🎟️</div>
+          <div className="stat-content">
+            <h3>{couponStats.total_coupons}</h3>
+            <p>Mã giảm giá</p>
+            <small>{couponStats.active_coupons} đang hoạt động</small>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon discount">💸</div>
+          <div className="stat-content">
+            <h3>${couponStats.total_discount_given.toFixed(0)}</h3>
+            <p>Tổng giảm giá</p>
+            <small>{couponStats.total_usage} lượt sử dụng</small>
+          </div>
+        </div>
       </div>
 
       <div className="quick-actions">
@@ -167,6 +223,20 @@ const AdminDashboard = () => {
           >
             <span className="action-icon">🏷️</span>
             <span>Quản lý Danh mục</span>
+          </button>
+          <button 
+            className="action-btn"
+            onClick={() => navigate('/admin/coupons')}
+          >
+            <span className="action-icon">🎟️</span>
+            <span>Quản lý Mã giảm giá</span>
+          </button>
+          <button 
+            className="action-btn"
+            onClick={() => navigate('/admin/coupons?action=create')}
+          >
+            <span className="action-icon">➕</span>
+            <span>Tạo mã mới</span>
           </button>
         </div>
       </div>

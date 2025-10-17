@@ -69,25 +69,16 @@ def get_treatment_suggestion(disease_name: str, confidence: float) -> str:
 
         Yêu cầu trả lời theo format sau:
 
-        1. TỔNG QUAN:
-        - Mô tả ngắn gọn về tình trạng
-        - Mức độ nguy hiểm và tác động đến năng suất
-
-        2. NGUYÊN NHÂN:
+        1. NGUYÊN NHÂN:
         - Liệt kê các nguyên nhân chính
         - Điều kiện môi trường thuận lợi
 
-        3. NHẬN BIẾT:
-        - Các dấu hiệu đặc trưng
-        - Vị trí thường xuất hiện trên cây
-        - Thời điểm dễ phát sinh
-
-        4. GIẢI PHÁP ĐIỀU TRỊ:
+        2. GIẢI PHÁP ĐIỀU TRỊ:
         - Các biện pháp xử lý khẩn cấp
         - Thuốc đặc trị và liều lượng
         - Thời gian điều trị dự kiến
 
-        5. PHÒNG NGỪA:
+        3. PHÒNG NGỪA:
         - Biện pháp canh tác
         - Chế độ chăm sóc
         - Điều kiện môi trường cần duy trì
