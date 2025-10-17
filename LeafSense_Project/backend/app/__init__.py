@@ -5,8 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from core.database import Base, engine
-from app.routers import prediction, auth, users  # ✅ chỉ giữ dòng này
-
+from app.routers import prediction, auth, users, history_upload, shop, admin, coupon  # Import router mới
+from app.models.users import PasswordResetToken
+from app.models.coupon import Coupon
+from app.models.coupon_usage import CouponUsage
 def create_app() -> FastAPI:
     # Load env
     load_dotenv()
@@ -18,9 +20,7 @@ def create_app() -> FastAPI:
 
     # CORS
     origins = [
-        os.getenv("FRONTEND_ORIGIN", "http://localhost:5173"),
-        "http://localhost:5174",   # vite đôi khi chạy port 5174
-        "http://localhost:3000",
+        os.getenv("FRONTEND_ORIGIN", "http://localhost:5173"), "http://localhost:5174", "http://localhost:3000",
     ]
 
     app.add_middleware(
@@ -47,6 +47,10 @@ def create_app() -> FastAPI:
     app.include_router(prediction.router)
     app.include_router(auth.router, prefix="/api", tags=["Authentication"])
     app.include_router(users.router, prefix="/api/user", tags=["User Management"])
+    app.include_router(history_upload.router, prefix="/api", tags=["History"])
+    app.include_router(shop.router, prefix="/api/shop", tags=["Shop"])
+    app.include_router(admin.router, prefix="/api", tags=["Admin"])
+    app.include_router(coupon.router, prefix="/api", tags=["Coupons"])
 
     # Health check
     @app.get("/health")

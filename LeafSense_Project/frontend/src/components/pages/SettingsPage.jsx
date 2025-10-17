@@ -10,7 +10,8 @@ const SettingsPage = () => {
     email: '',
     phone: '',
     address: '',
-    avatar: null
+    avatar: null,
+    provider: 'normal'
   })
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [avatarFile, setAvatarFile] = useState(null)
@@ -20,7 +21,9 @@ const SettingsPage = () => {
     confirmPassword: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' })
 
   // ===== LOAD USER DATA FROM API =====
   const loadUserProfile = async () => {
@@ -47,14 +50,34 @@ const SettingsPage = () => {
 
       const data = await response.json()
       
+      // Xử lý avatar URL
+      let avatarUrl = null
+      if (data.avatar_url) {
+        if (data.avatar_url.startsWith('http')) {
+          avatarUrl = data.avatar_url
+        } else {
+          avatarUrl = `http://localhost:8000${data.avatar_url}`
+        }
+      }
+      
       // Cập nhật userInfo với dữ liệu từ API
-      setUserInfo({
+      const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+      const updatedUserInfo = {
+        id: data.id || currentUser.id, // Preserve user ID
         name: data.name || '',
         email: data.email || '',
         phone: data.phone || '',
         address: data.address || '',
-        avatar: data.avatar_url || null
-      })
+        avatar: avatarUrl,
+        provider: data.provider || 'normal'
+      }
+      
+      setUserInfo(updatedUserInfo)
+      
+      // Cập nhật localStorage và thông báo cho Layout
+      localStorage.setItem('user', JSON.stringify(updatedUserInfo))
+      window.dispatchEvent(new Event('storage'))
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: updatedUserInfo }))
       
     } catch (error) {
       console.error('Error loading profile:', error)
@@ -69,7 +92,8 @@ const SettingsPage = () => {
           email: userData.email || '',
           phone: userData.phone || '',
           address: userData.address || '',
-          avatar: userData.avatar_url || null
+          avatar: userData.avatar || null,
+          provider: userData.provider || 'normal'
         })
       }
     } finally {
@@ -92,6 +116,22 @@ const SettingsPage = () => {
     }
     
     // Load user profile data
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      const userData = JSON.parse(savedUser)
+      if (userData.name && userData.email) {
+        setUserInfo({
+          name: userData.name || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          address: userData.address || '',
+          avatar: userData.avatar || null,
+          provider: userData.provider || 'normal'
+        })
+        return
+      }
+    }
+    
     loadUserProfile()
   }, [])
 
@@ -115,6 +155,10 @@ const SettingsPage = () => {
       ...prev,
       [name]: value
     }))
+    // Clear profile message when user starts typing
+    if (message.text) {
+      setMessage({ type: '', text: '' })
+    }
   }
 
   const handlePasswordChange = (e) => {
@@ -123,10 +167,47 @@ const SettingsPage = () => {
       ...prev,
       [name]: value
     }))
+    // Clear password message when user starts typing
+    if (passwordMessage.text) {
+      setPasswordMessage({ type: '', text: '' })
+    }
   }
 
   // ===== AVATAR FUNCTIONS =====
-  const handleAvatarChange = (e) => {
+  const compressImage = (file, maxWidth = 400, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
+          }
+        } else {
+          if (height > maxWidth) {
+            width = (width * maxWidth) / height
+            height = maxWidth
+          }
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(resolve, 'image/jpeg', quality)
+      }
+      
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
       // Validation
@@ -143,34 +224,51 @@ const SettingsPage = () => {
         return
       }
       
-      setAvatarFile(file)
-      
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setAvatarPreview(e.target.result)
+      try {
+        // Compress image if it's larger than 1MB
+        let processedFile = file
+        if (file.size > 1024 * 1024) {
+          setMessage({ type: 'info', text: 'Compressing image...' })
+          processedFile = await compressImage(file)
+        }
+        
+        setAvatarFile(processedFile)
+        
+        // Create preview
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setAvatarPreview(e.target.result)
+        }
+        reader.readAsDataURL(processedFile)
+        
+        setMessage({ type: 'info', text: 'Avatar selected. Click "Save Changes" to update.' })
+        // Auto clear message after 5 seconds
+        setTimeout(() => {
+          setMessage({ type: '', text: '' })
+        }, 5000)
+      } catch (error) {
+        console.error('Error processing image:', error)
+        setMessage({ type: 'error', text: 'Error processing image. Please try again.' })
       }
-      reader.readAsDataURL(file)
-      
-      setMessage({ type: 'success', text: 'Avatar selected successfully!' })
     }
   }
 
   const removeAvatar = () => {
     setAvatarFile(null)
     setAvatarPreview(null)
-    setUserInfo(prev => ({
-      ...prev,
-      avatar: null
-    }))
-    setMessage({ type: 'success', text: 'Avatar removed successfully!' })
+    // Don't update userInfo.avatar here, just clear preview
+    setMessage({ type: 'info', text: 'Avatar removed. Click "Save Changes" to update.' })
+    // Auto clear message after 5 seconds
+    setTimeout(() => {
+      setMessage({ type: '', text: '' })
+    }, 5000)
   }
 
   // ===== API INTEGRATION - THAY ĐỔI DỮ LIỆU THẬT TẠI ĐÂY =====
   const saveUserInfo = async () => {
     try {
       setIsLoading(true)
-      setMessage({ type: '', text: '' })
+      setMessage({ type: 'info', text: avatarFile ? 'Uploading avatar...' : 'Updating profile...' })
 
       // Validation
       if (!userInfo.name.trim()) return setMessage({ type: 'error', text: 'Name is required!' })
@@ -182,7 +280,7 @@ const SettingsPage = () => {
         if (!phoneRegex.test(userInfo.phone.replace(/\s/g, '')))
           return setMessage({ type: 'error', text: 'Invalid Vietnamese phone number!' })
       }
-      if (!userInfo.address.trim()) return setMessage({ type: 'error', text: 'Address is required!' })
+      // Address is optional, no validation needed
 
       // Gửi formData
       const formData = new FormData()
@@ -190,7 +288,14 @@ const SettingsPage = () => {
       formData.append('email', userInfo.email)
       formData.append('phone', userInfo.phone)
       formData.append('address', userInfo.address)
-      if (avatarFile) formData.append('avatar', avatarFile)
+      
+      // Handle avatar changes
+      if (avatarFile) {
+        formData.append('avatar', avatarFile)
+      } else if (avatarPreview === null && userInfo.avatar) {
+        // Avatar was removed, send empty file or remove flag
+        formData.append('remove_avatar', 'true')
+      }
 
       const token = localStorage.getItem('token')
       const response = await fetch('http://localhost:8000/api/user/profile', {
@@ -203,23 +308,46 @@ const SettingsPage = () => {
       const data = await response.json()
 
       // ✅ Cập nhật localStorage và Layout
+      let finalAvatarUrl = null
+      if (data.avatar_url) {
+        if (data.avatar_url.startsWith('http')) {
+          finalAvatarUrl = data.avatar_url // Google avatar
+        } else {
+          finalAvatarUrl = `http://localhost:8000${data.avatar_url}` // Local avatar
+        }
+      } else if (avatarPreview === null) {
+        finalAvatarUrl = null // Avatar removed
+      } else {
+        finalAvatarUrl = userInfo.avatar // Keep existing
+      }
+      
+
+      
       const updatedUser = {
+        id: data.id || userInfo.id, // Preserve user ID
         name: data.name || userInfo.name,
         email: data.email || userInfo.email,
         phone: data.phone || userInfo.phone,
         address: data.address || userInfo.address,
-        avatar: data.avatar_url || avatarPreview || userInfo.avatar,
+        avatar: finalAvatarUrl,
+        provider: userInfo.provider
       }
 
-      // Lưu lại thông tin user chuẩn
+      // Cập nhật UI ngay trước để giảm độ trễ cảm nhận
+      setUserInfo(updatedUser)
+      setAvatarFile(null)
+      setAvatarPreview(null)
+      setMessage({ type: 'success', text: 'Profile updated successfully!' })
+
+      // Lưu lại thông tin user chuẩn (async)
       localStorage.setItem('user', JSON.stringify(updatedUser))
       window.dispatchEvent(new Event('storage'))
       window.dispatchEvent(new CustomEvent('profile-updated', { detail: updatedUser }))
 
-      // Cập nhật UI ngay
-      setUserInfo(updatedUser)
-      setMessage({ type: 'success', text: 'Profile updated successfully!' })
-      setAvatarFile(null)
+      // Auto clear success message
+      setTimeout(() => {
+        setMessage({ type: '', text: '' })
+      }, 3000)
     
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -232,22 +360,44 @@ const SettingsPage = () => {
 
   const updatePassword = async () => {
     try {
-      setIsLoading(true)
-      setMessage({ type: '', text: '' })
+      setIsPasswordLoading(true)
+      setPasswordMessage({ type: '', text: '' })
 
       // Validation
+      if (!passwordData.oldPassword.trim()) {
+        setPasswordMessage({ type: 'error', text: 'Old password is required!' })
+        setIsPasswordLoading(false)
+        return
+      }
+
+      if (!passwordData.newPassword.trim()) {
+        setPasswordMessage({ type: 'error', text: 'New password is required!' })
+        setIsPasswordLoading(false)
+        return
+      }
+
       if (passwordData.newPassword !== passwordData.confirmPassword) {
-        setMessage({ type: 'error', text: 'New passwords do not match!' })
+        setPasswordMessage({ type: 'error', text: 'New password and confirm password do not match!' })
+        setIsPasswordLoading(false)
         return
       }
 
-      if (passwordData.newPassword.length < 6) {
-        setMessage({ type: 'error', text: 'Password must be at least 6 characters!' })
+      // Removed password length validation as requested
+
+      if (passwordData.oldPassword === passwordData.newPassword) {
+        setPasswordMessage({ type: 'error', text: 'New password must be different from old password!' })
+        setIsPasswordLoading(false)
         return
       }
 
-      // THAY ĐỔI URL API CỦA BẠN TẠI ĐÂY
       const token = localStorage.getItem('token')
+      
+      if (!token) {
+        setPasswordMessage({ type: 'error', text: 'Please login first!' })
+        setIsPasswordLoading(false)
+        return
+      }
+      
       const response = await fetch('http://localhost:8000/api/user/change-password', {
         method: 'PUT',
         headers: {
@@ -259,18 +409,17 @@ const SettingsPage = () => {
           new_password: passwordData.newPassword,
         })
       })
-
+      
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to change password')
+        throw new Error(errorData.detail || errorData.message || 'Failed to change password')
       }
 
       const data = await response.json()
       
-      // MAPPING DỮ LIỆU API - ĐIỀU CHỈNH NẾU CẤU TRÚC KHÁC
-      setMessage({ 
+      setPasswordMessage({ 
         type: 'success', 
-        text: data.message || 'Password changed successfully!' // <-- Điều chỉnh tên trường
+        text: data.message || 'Password changed successfully!'
       })
 
       // Reset password form
@@ -282,12 +431,12 @@ const SettingsPage = () => {
       
     } catch (error) {
       console.error('Error changing password:', error)
-      setMessage({ 
+      setPasswordMessage({ 
         type: 'error', 
         text: error.message || 'Failed to change password. Please try again.' 
       })
     } finally {
-      setIsLoading(false)
+      setIsPasswordLoading(false)
     }
   }
 
@@ -301,12 +450,6 @@ const SettingsPage = () => {
           <p>Manage your account settings and preferences</p>
         </div>
 
-        {/* MESSAGE DISPLAY */}
-        {message.text && (
-          <div className={`message-display ${message.type}`}>
-            {message.text}
-          </div>
-        )}
 
         {/* SETTINGS CONTAINER */}
         <div className="settings-container">
@@ -360,15 +503,36 @@ const SettingsPage = () => {
               <div className="account-section">
                 <h4>Personal Info</h4>
                 
+                {/* PROFILE MESSAGE DISPLAY */}
+                {message.text && (
+                  <div className={`message-display ${message.type}`} style={{ marginBottom: '15px' }}>
+                    {message.text}
+                  </div>
+                )}
+                
                 {/* AVATAR SECTION */}
                 <div className="avatar-section">
                   <div className="avatar-container">
                     <div className="avatar-preview">
-                      {avatarPreview || userInfo.avatar ? (
+                      {avatarPreview ? (
                         <img 
-                          src={avatarPreview || userInfo.avatar} 
+                          src={avatarPreview} 
+                          alt="Avatar Preview" 
+                          className="avatar-image"
+                          loading="lazy"
+                        />
+                      ) : userInfo.avatar ? (
+                        <img 
+                          src={userInfo.avatar}
                           alt="Avatar" 
                           className="avatar-image"
+                          loading="lazy"
+                          onLoad={(e) => {
+                            e.target.style.opacity = '1'
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                          }}
                         />
                       ) : (
                         <div className="avatar-placeholder">
@@ -377,30 +541,35 @@ const SettingsPage = () => {
                       )}
                     </div>
                     <div className="avatar-actions">
-                      <label htmlFor="avatar-upload" className="avatar-upload-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                        </svg>
-                        {avatarPreview || userInfo.avatar ? 'Change Avatar' : 'Upload Avatar'}
-                      </label>
-                      <input
-                        type="file"
-                        id="avatar-upload"
-                        accept="image/*"
-                        onChange={handleAvatarChange}
-                        style={{ display: 'none' }}
-                      />
-                      {(avatarPreview || userInfo.avatar) && (
-                        <button 
-                          type="button" 
-                          className="avatar-remove-btn"
-                          onClick={removeAvatar}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
-                          </svg>
-                          Remove
-                        </button>
+                      {/* Avatar actions chỉ hiển thị cho normal users */}
+                      {userInfo.provider === 'normal' && (
+                        <>
+                          <label htmlFor="avatar-upload" className="avatar-upload-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                            </svg>
+                            {avatarPreview ? 'Change Avatar' : (userInfo.avatar ? 'Change Avatar' : 'Upload Avatar')}
+                          </label>
+                          <input
+                            type="file"
+                            id="avatar-upload"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            style={{ display: 'none' }}
+                          />
+                          {(avatarPreview || userInfo.avatar) && (
+                            <button 
+                              type="button" 
+                              className="avatar-remove-btn"
+                              onClick={removeAvatar}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                              </svg>
+                              Remove
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -459,57 +628,90 @@ const SettingsPage = () => {
                   onClick={saveUserInfo}
                   disabled={isLoading}
                 >
-                  {isLoading ? 'Saving...' : 'Save Changes'}
+                  {isLoading ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="spinner"></span>
+                      Saving...
+                    </span>
+                  ) : 'Save Changes'}
                 </button>
               </div>
 
-              {/* CHANGE PASSWORD SECTION */}
-              <div className="account-section">
-                <h4>Change Password</h4>
-                <div className="form-group">
-                  <label htmlFor="oldPassword">Old Password</label>
-                  <input
-                    type="password"
-                    id="oldPassword"
-                    name="oldPassword"
-                    value={passwordData.oldPassword}
-                    onChange={handlePasswordChange}
-                    className="form-input"
-                    placeholder="Enter old password"
-                  />
+              {/* CHANGE PASSWORD SECTION - Chỉ hiển thị cho tài khoản thông thường */}
+              {userInfo.provider === 'normal' && (
+                <div className="account-section">
+                  <h4>Change Password</h4>
+                  
+                  {/* PASSWORD CHANGE MESSAGE DISPLAY */}
+                  {passwordMessage.text && (
+                    <div className={`message-display ${passwordMessage.type}`} style={{ marginBottom: '15px' }}>
+                      {passwordMessage.text}
+                    </div>
+                  )}
+                  
+                  <div className="form-group">
+                    <label htmlFor="oldPassword">Old Password</label>
+                    <input
+                      type="password"
+                      id="oldPassword"
+                      name="oldPassword"
+                      value={passwordData.oldPassword}
+                      onChange={handlePasswordChange}
+                      className="form-input"
+                      placeholder="Enter old password"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="newPassword">New Password</label>
+                    <input
+                      type="password"
+                      id="newPassword"
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      className="form-input"
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="confirmPassword">Confirm Password</label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      className="form-input"
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  <button 
+                    className="update-btn"
+                    onClick={updatePassword}
+                    disabled={isPasswordLoading}
+                  >
+                    {isPasswordLoading ? 'Updating...' : 'Update Password'}
+                  </button>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="newPassword">New Password</label>
-                  <input
-                    type="password"
-                    id="newPassword"
-                    name="newPassword"
-                    value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
-                    className="form-input"
-                    placeholder="Enter new password"
-                  />
+              )}
+
+              {/* THÔNG BÁO CHO GOOGLE USERS */}
+              {userInfo.provider === 'google' && (
+                <div className="account-section">
+                  <h4>Change Password</h4>
+                  <div className="info-message" style={{ 
+                    padding: '15px', 
+                    backgroundColor: '#e3f2fd', 
+                    border: '1px solid #2196f3', 
+                    borderRadius: '8px', 
+                    color: '#1565c0',
+                    textAlign: 'center'
+                  }}>
+                    <i className="fas fa-info-circle" style={{ marginRight: '8px' }}></i>
+                    Bạn đã đăng nhập bằng Google. Không thể thay đổi mật khẩu cho tài khoản này.
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="confirmPassword">Confirm New Password</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={passwordData.confirmPassword}
-                    onChange={handlePasswordChange}
-                    className="form-input"
-                    placeholder="Confirm new password"
-                  />
-                </div>
-                <button 
-                  className="update-btn"
-                  onClick={updatePassword}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Updating...' : 'Update Password'}
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </div>

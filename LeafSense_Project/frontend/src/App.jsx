@@ -1,5 +1,6 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { ToastContainer } from 'react-toastify'
 import Dashboard from './components/pages/Dashboard'
 import UploadPage from './components/pages/UploadPage'
 import HistoryPage from './components/pages/HistoryPage'
@@ -8,10 +9,24 @@ import OrdersPage from './components/pages/OrdersPage'
 import ChatbotPage from './components/pages/ChatbotPage'
 import SettingsPage from './components/pages/SettingsPage'
 import CommunityPage from './components/pages/CommunityPage'
+import CheckoutPage from './components/pages/CheckoutPage'
+import CartPage from './components/pages/CartPage'
 import Login from './components/pages/Login'
 import Signup from './components/pages/Signup'
-import GoogleCallback from './components/pages/GoogleCallback'
+import ForgotPassword from './components/pages/ForgotPassword'
+import ResetPassword from './components/pages/ResetPassword'
+import AccountLocked from './components/pages/AccountLocked'
+// Admin components
+import AdminDashboard from './components/pages/admin/AdminDashboard'
+import AdminUsers from './components/pages/admin/AdminUsers'
+import AdminProducts from './components/pages/admin/AdminProducts'
+import AdminOrders from './components/pages/admin/AdminOrders'
+import AdminCategories from './components/pages/admin/AdminCategories'
+import AdminCoupons from './components/pages/admin/AdminCoupons'
+import AdminSettings from './components/pages/admin/AdminSettings'
+import AdminAuthGuard from './components/AdminAuthGuard'
 import './App.css'
+import 'react-toastify/dist/ReactToastify.css'
 
 function App() {
   return (
@@ -21,7 +36,47 @@ function App() {
           {/* Authentication pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/google/callback" element={<GoogleCallback />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/account-locked" element={<AccountLocked />} />
+          
+          {/* Admin pages - redirect to main login */}
+          <Route path="/admin/login" element={<Login />} />
+          <Route path="/admin/dashboard" element={
+            <AdminAuthGuard>
+              <AdminDashboard />
+            </AdminAuthGuard>
+          } />
+          <Route path="/admin/users" element={
+            <AdminAuthGuard>
+              <AdminUsers />
+            </AdminAuthGuard>
+          } />
+          <Route path="/admin/products" element={
+            <AdminAuthGuard>
+              <AdminProducts />
+            </AdminAuthGuard>
+          } />
+          <Route path="/admin/orders" element={
+            <AdminAuthGuard>
+              <AdminOrders />
+            </AdminAuthGuard>
+          } />
+          <Route path="/admin/categories" element={
+            <AdminAuthGuard>
+              <AdminCategories />
+            </AdminAuthGuard>
+          } />
+          <Route path="/admin/coupons" element={
+            <AdminAuthGuard>
+              <AdminCoupons />
+            </AdminAuthGuard>
+          } />
+          <Route path="/admin/settings" element={
+            <AdminAuthGuard>
+              <AdminSettings />
+            </AdminAuthGuard>
+          } />
           
           {/* Main pages */}
           <Route path="/" element={<Dashboard />} />
@@ -29,11 +84,24 @@ function App() {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/chatbot" element={<ChatbotPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </Router>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   )
 }

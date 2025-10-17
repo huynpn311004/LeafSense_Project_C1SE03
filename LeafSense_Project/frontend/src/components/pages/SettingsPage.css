@@ -1,7 +1,7 @@
 /* ===== SETTINGS PAGE STYLES ===== */
 .settings-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: transparent;
   padding: 2rem;
 }
 
@@ -46,6 +46,12 @@
   background: linear-gradient(135deg, #f56565, #e53e3e);
   color: white;
   box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.message-display.info {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
 }
 
 @keyframes slideDown {
@@ -213,6 +219,9 @@
   padding: 1.5rem;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .account-section h4 {
@@ -226,7 +235,7 @@
 
 /* ===== FORM STYLES ===== */
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 0;
 }
 
 .form-group label {
@@ -365,6 +374,7 @@
   transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-top: 0.5rem;
 }
 
 .save-btn {
@@ -521,6 +531,7 @@
   
   .account-section {
     padding: 1.25rem;
+    gap: 1.25rem;
   }
   
   .avatar-section {
@@ -570,6 +581,7 @@
   
   .account-section {
     padding: 1rem;
+    gap: 1rem;
   }
   
   .form-input {
@@ -601,6 +613,20 @@
   50% {
     opacity: 0.5;
   }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 .save-btn:disabled,

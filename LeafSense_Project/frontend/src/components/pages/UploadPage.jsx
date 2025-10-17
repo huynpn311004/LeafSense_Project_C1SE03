@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import Layout from '../layout/Layout';
 import { analyzeLeafImage } from '../../services/predictionApi';
+import TreatmentGuide from './TreatmentGuide';
 import './UploadPage.css';
 
 const UploadPage = () => {
@@ -139,6 +140,9 @@ const UploadPage = () => {
                         </div>
                       ))}
                     </div>
+                  )}
+                  {result.treatment_suggestion && (
+                    <TreatmentGuide treatmentData={result.treatment_suggestion} />
                   )}
                 </div>
               </div>

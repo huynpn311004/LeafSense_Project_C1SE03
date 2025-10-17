@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     address: Optional[str] = None
     role: str
     status: str
+    provider: str
     created_at: datetime
 
     class Config:
