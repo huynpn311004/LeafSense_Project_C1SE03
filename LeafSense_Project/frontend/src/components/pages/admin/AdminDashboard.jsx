@@ -69,13 +69,12 @@ const AdminDashboard = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
-    toast.success('Đã đăng xuất')
   }
 
   if (loading) {
     return (
       <div className="admin-dashboard">
-        <div className="loading">Đang tải...</div>
+        <div className="loading">Loading...</div>
       </div>
     )
   }
@@ -85,11 +84,11 @@ const AdminDashboard = () => {
       <div className="admin-header">
         <div className="admin-header-left">
           <h1>LeafSense Admin Dashboard</h1>
-          <p>Quản lý hệ thống</p>
+          <p>System Management</p>
         </div>
         <div className="admin-header-right">
           <button onClick={handleLogout} className="logout-btn">
-            Đăng xuất
+            Logout
           </button>
         </div>
       </div>
@@ -105,31 +104,37 @@ const AdminDashboard = () => {
           className="nav-btn"
           onClick={() => navigate('/admin/users')}
         >
-          Quản lý Users
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/products')}
-        >
-          Quản lý Sản phẩm
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/orders')}
-        >
-          Quản lý Đơn hàng
+          User Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/categories')}
         >
-          Quản lý Danh mục
+          Category Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/products')}
+        >
+          Product Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/orders')}
+        >
+          Order Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/coupons')}
         >
-          Quản lý Mã giảm giá
+          Coupon Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/community')}
+        >
+          Community Management
         </button>
         <button 
           className="nav-btn"
@@ -144,8 +149,8 @@ const AdminDashboard = () => {
           <div className="stat-icon users">👥</div>
           <div className="stat-content">
             <h3>{stats.total_users}</h3>
-            <p>Tổng Users</p>
-            <small>{stats.active_users} đang hoạt động</small>
+            <p>Total Users</p>
+            <small>{stats.active_users} active</small>
           </div>
         </div>
 
@@ -153,7 +158,7 @@ const AdminDashboard = () => {
           <div className="stat-icon products">📦</div>
           <div className="stat-content">
             <h3>{stats.total_products}</h3>
-            <p>Tổng Sản phẩm</p>
+            <p>Total Products</p>
           </div>
         </div>
 
@@ -161,8 +166,8 @@ const AdminDashboard = () => {
           <div className="stat-icon orders">📋</div>
           <div className="stat-content">
             <h3>{stats.total_orders}</h3>
-            <p>Tổng Đơn hàng</p>
-            <small>{stats.pending_orders} chờ xử lý</small>
+            <p>Total Orders</p>
+            <small>{stats.pending_orders} pending</small>
           </div>
         </div>
 
@@ -170,7 +175,7 @@ const AdminDashboard = () => {
           <div className="stat-icon revenue">💰</div>
           <div className="stat-content">
             <h3>{stats.total_revenue.toLocaleString('vi-VN')}₫</h3>
-            <p>Doanh thu</p>
+            <p>Revenue</p>
           </div>
         </div>
 
@@ -178,8 +183,8 @@ const AdminDashboard = () => {
           <div className="stat-icon coupons">🎟️</div>
           <div className="stat-content">
             <h3>{couponStats.total_coupons}</h3>
-            <p>Mã giảm giá</p>
-            <small>{couponStats.active_coupons} đang hoạt động</small>
+            <p>Coupons</p>
+            <small>{couponStats.active_coupons} active</small>
           </div>
         </div>
 
@@ -187,56 +192,63 @@ const AdminDashboard = () => {
           <div className="stat-icon discount">💸</div>
           <div className="stat-content">
             <h3>${couponStats.total_discount_given.toFixed(0)}</h3>
-            <p>Tổng giảm giá</p>
-            <small>{couponStats.total_usage} lượt sử dụng</small>
+            <p>Total Discount</p>
+            <small>{couponStats.total_usage} times used</small>
           </div>
         </div>
       </div>
 
       <div className="quick-actions">
-        <h2>Thao tác nhanh</h2>
+        <h2>Quick Actions</h2>
         <div className="actions-grid">
           <button 
             className="action-btn"
             onClick={() => navigate('/admin/users')}
           >
             <span className="action-icon">👥</span>
-            <span>Quản lý Users</span>
-          </button>
-          <button 
-            className="action-btn"
-            onClick={() => navigate('/admin/products')}
-          >
-            <span className="action-icon">📦</span>
-            <span>Quản lý Sản phẩm</span>
-          </button>
-          <button 
-            className="action-btn"
-            onClick={() => navigate('/admin/orders')}
-          >
-            <span className="action-icon">📋</span>
-            <span>Quản lý Đơn hàng</span>
+            <span>User Management</span>
           </button>
           <button 
             className="action-btn"
             onClick={() => navigate('/admin/categories')}
           >
             <span className="action-icon">🏷️</span>
-            <span>Quản lý Danh mục</span>
+            <span>Category Management</span>
+          </button>
+          <button 
+            className="action-btn"
+            onClick={() => navigate('/admin/products')}
+          >
+            <span className="action-icon">📦</span>
+            <span>Product Management</span>
+          </button>
+          <button 
+            className="action-btn"
+            onClick={() => navigate('/admin/orders')}
+          >
+            <span className="action-icon">📋</span>
+            <span>Order Management</span>
           </button>
           <button 
             className="action-btn"
             onClick={() => navigate('/admin/coupons')}
           >
             <span className="action-icon">🎟️</span>
-            <span>Quản lý Mã giảm giá</span>
+            <span>Coupon Management</span>
+          </button>
+          <button 
+            className="action-btn"
+            onClick={() => navigate('/admin/community')}
+          >
+            <span className="action-icon">👥</span>
+            <span>Community Management</span>
           </button>
           <button 
             className="action-btn"
             onClick={() => navigate('/admin/coupons?action=create')}
           >
             <span className="action-icon">➕</span>
-            <span>Tạo mã mới</span>
+            <span>Create New Coupon</span>
           </button>
         </div>
       </div>

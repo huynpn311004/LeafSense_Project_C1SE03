@@ -4,7 +4,6 @@ import './SettingsPage.css'
 
 const SettingsPage = () => {
   // ===== STATE MANAGEMENT =====
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [userInfo, setUserInfo] = useState({
     name: '',
     email: '',
@@ -33,6 +32,7 @@ const SettingsPage = () => {
       
       if (!token) {
         setMessage({ type: 'error', text: 'Please login first!' })
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
         return
       }
 
@@ -82,6 +82,7 @@ const SettingsPage = () => {
     } catch (error) {
       console.error('Error loading profile:', error)
       setMessage({ type: 'error', text: 'Failed to load profile data' })
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000)
       
       // Fallback: lấy từ localStorage nếu có
       const savedUser = localStorage.getItem('user')
@@ -101,20 +102,8 @@ const SettingsPage = () => {
     }
   }
 
-  // ===== DARK MODE FUNCTIONALITY =====
+  // ===== LOAD USER DATA ON COMPONENT MOUNT =====
   useEffect(() => {
-    // Lấy theme từ localStorage hoặc system preference
-    const savedTheme = localStorage.getItem('theme')
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    
-    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-      setIsDarkMode(true)
-      document.documentElement.classList.add('dark')
-    } else {
-      setIsDarkMode(false)
-      document.documentElement.classList.remove('dark')
-    }
-    
     // Load user profile data
     const savedUser = localStorage.getItem('user')
     if (savedUser) {
@@ -134,19 +123,6 @@ const SettingsPage = () => {
     
     loadUserProfile()
   }, [])
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode
-    setIsDarkMode(newDarkMode)
-    
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
-  }
 
   // ===== USER INFO FUNCTIONS =====
   const handleUserInfoChange = (e) => {
@@ -216,11 +192,13 @@ const SettingsPage = () => {
       
       if (file.size > maxSize) {
         setMessage({ type: 'error', text: 'File size must be less than 5MB!' })
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
         return
       }
       
       if (!allowedTypes.includes(file.type)) {
         setMessage({ type: 'error', text: 'Please select a valid image file (JPEG, PNG, GIF)!' })
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
         return
       }
       
@@ -249,6 +227,7 @@ const SettingsPage = () => {
       } catch (error) {
         console.error('Error processing image:', error)
         setMessage({ type: 'error', text: 'Error processing image. Please try again.' })
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
       }
     }
   }
@@ -271,14 +250,29 @@ const SettingsPage = () => {
       setMessage({ type: 'info', text: avatarFile ? 'Uploading avatar...' : 'Updating profile...' })
 
       // Validation
-      if (!userInfo.name.trim()) return setMessage({ type: 'error', text: 'Name is required!' })
-      if (!userInfo.email.trim()) return setMessage({ type: 'error', text: 'Email is required!' })
+      if (!userInfo.name.trim()) {
+        setMessage({ type: 'error', text: 'Name is required!' })
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+        return
+      }
+      if (!userInfo.email.trim()) {
+        setMessage({ type: 'error', text: 'Email is required!' })
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+        return
+      }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(userInfo.email)) return setMessage({ type: 'error', text: 'Invalid email!' })
+      if (!emailRegex.test(userInfo.email)) {
+        setMessage({ type: 'error', text: 'Invalid email!' })
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+        return
+      }
       if (userInfo.phone.trim()) {
         const phoneRegex = /^(0|\+84)[3-9][0-9]{8}$/
-        if (!phoneRegex.test(userInfo.phone.replace(/\s/g, '')))
-          return setMessage({ type: 'error', text: 'Invalid Vietnamese phone number!' })
+        if (!phoneRegex.test(userInfo.phone.replace(/\s/g, ''))) {
+          setMessage({ type: 'error', text: 'Invalid Vietnamese phone number!' })
+          setTimeout(() => setMessage({ type: '', text: '' }), 3000)
+          return
+        }
       }
       // Address is optional, no validation needed
 
@@ -352,6 +346,11 @@ const SettingsPage = () => {
     } catch (error) {
       console.error('Error updating profile:', error)
       setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' })
+      
+      // Auto clear error message after 3 seconds
+      setTimeout(() => {
+        setMessage({ type: '', text: '' })
+      }, 3000)
     } finally {
       setIsLoading(false)
     }
@@ -366,18 +365,21 @@ const SettingsPage = () => {
       // Validation
       if (!passwordData.oldPassword.trim()) {
         setPasswordMessage({ type: 'error', text: 'Old password is required!' })
+        setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000)
         setIsPasswordLoading(false)
         return
       }
 
       if (!passwordData.newPassword.trim()) {
         setPasswordMessage({ type: 'error', text: 'New password is required!' })
+        setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000)
         setIsPasswordLoading(false)
         return
       }
 
       if (passwordData.newPassword !== passwordData.confirmPassword) {
         setPasswordMessage({ type: 'error', text: 'New password and confirm password do not match!' })
+        setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000)
         setIsPasswordLoading(false)
         return
       }
@@ -386,6 +388,7 @@ const SettingsPage = () => {
 
       if (passwordData.oldPassword === passwordData.newPassword) {
         setPasswordMessage({ type: 'error', text: 'New password must be different from old password!' })
+        setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000)
         setIsPasswordLoading(false)
         return
       }
@@ -394,6 +397,7 @@ const SettingsPage = () => {
       
       if (!token) {
         setPasswordMessage({ type: 'error', text: 'Please login first!' })
+        setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000)
         setIsPasswordLoading(false)
         return
       }
@@ -428,6 +432,11 @@ const SettingsPage = () => {
         newPassword: '',
         confirmPassword: ''
       })
+
+      // Auto clear success message after 3 seconds
+      setTimeout(() => {
+        setPasswordMessage({ type: '', text: '' })
+      }, 3000)
       
     } catch (error) {
       console.error('Error changing password:', error)
@@ -435,6 +444,11 @@ const SettingsPage = () => {
         type: 'error', 
         text: error.message || 'Failed to change password. Please try again.' 
       })
+      
+      // Auto clear error message after 3 seconds
+      setTimeout(() => {
+        setPasswordMessage({ type: '', text: '' })
+      }, 3000)
     } finally {
       setIsPasswordLoading(false)
     }
@@ -444,48 +458,8 @@ const SettingsPage = () => {
   return (
     <Layout>
       <div className="settings-page">
-        {/* HEADER */}
-        <div className="settings-header">
-          <h1>Settings</h1>
-          <p>Manage your account settings and preferences</p>
-        </div>
-
-
         {/* SETTINGS CONTAINER */}
         <div className="settings-container">
-          {/* THEME SETTINGS */}
-          <div className="settings-card">
-            <div className="settings-card-header">
-              <div className="settings-icon">
-                🌙
-              </div>
-              <div className="settings-title">
-                <h3>Theme</h3>
-                <p>Choose your preferred theme appearance</p>
-              </div>
-            </div>
-            <div className="theme-toggle">
-              <div className="theme-option">
-                <span className="theme-label">Light Mode</span>
-                <div className={`theme-radio ${!isDarkMode ? 'active' : ''}`}>
-                  <div className="theme-radio-inner"></div>
-                </div>
-              </div>
-              <div className="theme-option">
-                <span className="theme-label">Dark Mode</span>
-                <div className={`theme-radio ${isDarkMode ? 'active' : ''}`}>
-                  <div className="theme-radio-inner"></div>
-                </div>
-              </div>
-              <button 
-                className="theme-toggle-btn"
-                onClick={toggleDarkMode}
-              >
-                {isDarkMode ? 'Switch to Light' : 'Switch to Dark'}
-              </button>
-            </div>
-          </div>
-
           {/* ACCOUNT SETTINGS */}
           <div className="settings-card">
             <div className="settings-card-header">

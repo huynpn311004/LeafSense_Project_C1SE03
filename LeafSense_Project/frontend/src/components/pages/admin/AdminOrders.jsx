@@ -45,11 +45,11 @@ const AdminOrders = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Cập nhật trạng thái đơn hàng thành công')
+      toast.success('Order status updated successfully')
       fetchOrders()
     } catch (error) {
       console.error('Error updating order status:', error)
-      toast.error('Cập nhật trạng thái đơn hàng thất bại')
+      toast.error('Failed to update order status')
     }
   }
 
@@ -66,11 +66,11 @@ const AdminOrders = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending': return 'Chờ xử lý'
-      case 'processing': return 'Đang xử lý'
-      case 'shipped': return 'Đã giao hàng'
-      case 'delivered': return 'Đã nhận hàng'
-      case 'cancelled': return 'Đã hủy'
+      case 'pending': return 'Pending'
+      case 'processing': return 'Processing'
+      case 'shipped': return 'Shipped'
+      case 'delivered': return 'Delivered'
+      case 'cancelled': return 'Cancelled'
       default: return status
     }
   }
@@ -79,13 +79,12 @@ const AdminOrders = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
-    toast.success('Đã đăng xuất')
   }
 
   if (loading) {
     return (
       <div className="admin-orders">
-        <div className="loading">Đang tải...</div>
+        <div className="loading">Loading...</div>
       </div>
     )
   }
@@ -94,12 +93,12 @@ const AdminOrders = () => {
     <div className="admin-orders">
       <div className="admin-header">
         <div className="admin-header-left">
-          <h1>Quản lý Đơn hàng</h1>
-          <p>Duyệt và quản lý đơn hàng</p>
+          <h1>Order Management</h1>
+          <p>Review and manage orders</p>
         </div>
         <div className="admin-header-right">
           <button onClick={handleLogout} className="logout-btn">
-            Đăng xuất
+            Logout
           </button>
         </div>
       </div>
@@ -115,31 +114,43 @@ const AdminOrders = () => {
           className="nav-btn"
           onClick={() => navigate('/admin/users')}
         >
-          Quản lý Users
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/products')}
-        >
-          Quản lý Sản phẩm
-        </button>
-        <button 
-          className="nav-btn active"
-          onClick={() => navigate('/admin/orders')}
-        >
-          Quản lý Đơn hàng
+          User Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/categories')}
         >
-          Quản lý Danh mục
+          Category Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/products')}
+        >
+          Product Management
+        </button>
+        <button 
+          className="nav-btn active"
+          onClick={() => navigate('/admin/orders')}
+        >
+          Order Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/coupons')}
         >
-          Quản lý Mã giảm giá
+          Coupon Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/community')}
+        >
+          Community Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/settings')}
+        >
+          Settings
         </button>
       </div>
 
@@ -149,12 +160,12 @@ const AdminOrders = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="pending">Chờ xử lý</option>
-            <option value="processing">Đang xử lý</option>
-            <option value="shipped">Đã giao hàng</option>
-            <option value="delivered">Đã nhận hàng</option>
-            <option value="cancelled">Đã hủy</option>
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -164,8 +175,8 @@ const AdminOrders = () => {
           <div key={order.id} className="order-card">
             <div className="order-header">
               <div className="order-info">
-                <h3>Đơn hàng #{order.id}</h3>
-                <p>Ngày đặt: {new Date(order.created_at).toLocaleDateString('vi-VN')}</p>
+                <h3>Order #{order.id}</h3>
+                <p>Order Date: {new Date(order.created_at).toLocaleDateString('en-US')}</p>
               </div>
               <div className="order-status">
                 <span 
@@ -179,25 +190,25 @@ const AdminOrders = () => {
 
             <div className="order-details">
               <div className="customer-info">
-                <h4>Thông tin khách hàng</h4>
-                <p><strong>Tên:</strong> {order.shipping_name}</p>
-                <p><strong>SĐT:</strong> {order.shipping_phone}</p>
-                <p><strong>Địa chỉ:</strong> {order.shipping_address}</p>
+                <h4>Customer Information</h4>
+                <p><strong>Name:</strong> {order.shipping_name}</p>
+                <p><strong>Phone:</strong> {order.shipping_phone}</p>
+                <p><strong>Address:</strong> {order.shipping_address}</p>
               </div>
 
               <div className="order-summary">
-                <h4>Chi tiết đơn hàng</h4>
+                <h4>Order Details</h4>
                 <div className="order-items">
                   {order.order_items && order.order_items.map((item, index) => (
                     <div key={index} className="order-item">
-                      <span>Sản phẩm ID: {item.product_id}</span>
-                      <span>Số lượng: {item.quantity}</span>
-                      <span>Giá: {item.price.toLocaleString('vi-VN')}₫</span>
+                      <span>Product ID: {item.product_id}</span>
+                      <span>Quantity: {item.quantity}</span>
+                      <span>Price: {item.price.toLocaleString('vi-VN')}₫</span>
                     </div>
                   ))}
                 </div>
                 <div className="order-total">
-                  <strong>Tổng tiền: {order.total_amount.toLocaleString('vi-VN')}₫</strong>
+                  <strong>Total Amount: {order.total_amount.toLocaleString('vi-VN')}₫</strong>
                 </div>
               </div>
             </div>
@@ -209,13 +220,13 @@ const AdminOrders = () => {
                     className="action-btn process"
                     onClick={() => handleUpdateOrderStatus(order.id, 'processing')}
                   >
-                    Xử lý đơn hàng
+                    Process Order
                   </button>
                   <button 
                     className="action-btn cancel"
                     onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
                   >
-                    Hủy đơn hàng
+                    Cancel Order
                   </button>
                 </>
               )}
@@ -224,7 +235,7 @@ const AdminOrders = () => {
                   className="action-btn ship"
                   onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
                 >
-                  Giao hàng
+                  Ship Order
                 </button>
               )}
               {order.status === 'shipped' && (
@@ -232,7 +243,7 @@ const AdminOrders = () => {
                   className="action-btn deliver"
                   onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
                 >
-                  Xác nhận đã nhận
+                  Confirm Delivered
                 </button>
               )}
             </div>
@@ -241,7 +252,7 @@ const AdminOrders = () => {
         
         {orders.length === 0 && (
           <div className="no-data">
-            <p>Không có đơn hàng nào</p>
+            <p>No orders available</p>
           </div>
         )}
       </div>

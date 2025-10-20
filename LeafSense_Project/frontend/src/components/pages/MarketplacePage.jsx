@@ -216,7 +216,6 @@ const MarketplacePage = () => {
 
         {/* HEADER */}
         <div className="marketplace-header">
-          <h1>Marketplace</h1>
           <div className="header-actions">
             <div 
               className={`cart-icon ${cart.length > 0 ? 'has-items' : ''}`}
