@@ -67,7 +67,7 @@ const Signup = () => {
       {/* Left side - logo */}
       <div className="signup-left">
         <div className="signup-left-content">
-          <h1 className="logo-text">LeafSense</h1>
+          <h1 className="logo-text signup-logo">LeafSense</h1>
           <div className="leaf-pattern">
             {[...Array(9)].map((_, i) => (
               <div key={i} className={`leaf leaf-${i + 1}`}></div>

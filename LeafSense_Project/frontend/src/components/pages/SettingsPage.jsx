@@ -218,12 +218,6 @@ const SettingsPage = () => {
           setAvatarPreview(e.target.result)
         }
         reader.readAsDataURL(processedFile)
-        
-        setMessage({ type: 'info', text: 'Avatar selected. Click "Save Changes" to update.' })
-        // Auto clear message after 5 seconds
-        setTimeout(() => {
-          setMessage({ type: '', text: '' })
-        }, 5000)
       } catch (error) {
         console.error('Error processing image:', error)
         setMessage({ type: 'error', text: 'Error processing image. Please try again.' })
@@ -236,11 +230,6 @@ const SettingsPage = () => {
     setAvatarFile(null)
     setAvatarPreview(null)
     // Don't update userInfo.avatar here, just clear preview
-    setMessage({ type: 'info', text: 'Avatar removed. Click "Save Changes" to update.' })
-    // Auto clear message after 5 seconds
-    setTimeout(() => {
-      setMessage({ type: '', text: '' })
-    }, 5000)
   }
 
   // ===== API INTEGRATION - THAY ĐỔI DỮ LIỆU THẬT TẠI ĐÂY =====
@@ -462,16 +451,6 @@ const SettingsPage = () => {
         <div className="settings-container">
           {/* ACCOUNT SETTINGS */}
           <div className="settings-card">
-            <div className="settings-card-header">
-              <div className="settings-icon">
-                👤
-              </div>
-              <div className="settings-title">
-                <h3>Account</h3>
-                <p>Manage your personal information and password</p>
-              </div>
-            </div>
-
             <div className="account-sections">
               {/* PERSONAL INFO SECTION */}
               <div className="account-section">

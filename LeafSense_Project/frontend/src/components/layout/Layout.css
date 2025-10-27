@@ -28,12 +28,11 @@
 }
 
 .logo-text {
-  color: #ffffff;
+  color: #ffffff !important;
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.025em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-nav {

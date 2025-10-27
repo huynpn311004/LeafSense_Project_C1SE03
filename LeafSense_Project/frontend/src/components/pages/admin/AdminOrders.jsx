@@ -57,8 +57,8 @@ const AdminOrders = () => {
     switch (status) {
       case 'pending': return '#ff9800'
       case 'processing': return '#2196f3'
-      case 'shipped': return '#9c27b0'
-      case 'delivered': return '#4caf50'
+      case 'shipping': return '#9c27b0'
+      case 'completed': return '#4caf50'
       case 'cancelled': return '#f44336'
       default: return '#666'
     }
@@ -68,8 +68,8 @@ const AdminOrders = () => {
     switch (status) {
       case 'pending': return 'Pending'
       case 'processing': return 'Processing'
-      case 'shipped': return 'Shipped'
-      case 'delivered': return 'Delivered'
+      case 'shipping': return 'Shipping'
+      case 'completed': return 'Completed'
       case 'cancelled': return 'Cancelled'
       default: return status
     }
@@ -163,8 +163,8 @@ const AdminOrders = () => {
             <option value="">All Status</option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
+            <option value="shipping">Shipping</option>
+            <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -233,17 +233,17 @@ const AdminOrders = () => {
               {order.status === 'processing' && (
                 <button 
                   className="action-btn ship"
-                  onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
+                  onClick={() => handleUpdateOrderStatus(order.id, 'shipping')}
                 >
                   Ship Order
                 </button>
               )}
-              {order.status === 'shipped' && (
+              {order.status === 'shipping' && (
                 <button 
                   className="action-btn deliver"
-                  onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
+                  onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
                 >
-                  Confirm Delivered
+                  Mark Completed
                 </button>
               )}
             </div>

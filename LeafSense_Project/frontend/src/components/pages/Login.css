@@ -29,11 +29,13 @@
   text-align: center;
 }
 
-.logo-text {
+.login-left .login-left .logo-text,
+.login-left .logo-text.logo-text,
+.login-logo {
   font-family: 'Georgia', serif;
   font-size: 2.3rem;
   font-weight: bold;
-  color: #2d5a3d;
+  color: #2d5a3d !important;
   margin-bottom: 0.4rem;
   text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -262,7 +264,9 @@
     min-height: 150px;
   }
   
-  .logo-text {
+  .login-left .login-left .logo-text,
+  .login-left .logo-text.logo-text,
+  .login-logo {
     font-size: 1.8rem;
   }
   

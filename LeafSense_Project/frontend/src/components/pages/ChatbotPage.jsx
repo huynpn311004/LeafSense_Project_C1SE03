@@ -348,10 +348,10 @@ const ChatbotPage = () => {
 
         return (
             <div key={message.id} className={`message ${isUser ? 'user-message' : 'bot-message'}`}>
-                {/* User Avatar (Tùy chọn, thêm CSS cho .user-avatar) */}
-                {isUser && (
-                    <div className="user-avatar">
-                        👤
+                {/* Bot Avatar */}
+                {!isUser && (
+                    <div className="bot-avatar">
+                        🤖
                     </div>
                 )}
                 
@@ -365,10 +365,10 @@ const ChatbotPage = () => {
                     <div className="message-time">{time}</div>
                 </div>
                 
-                {/* Bot Avatar */}
-                {!isUser && (
-                    <div className="bot-avatar">
-                        🤖
+                {/* User Avatar */}
+                {isUser && (
+                    <div className="user-avatar">
+                        👤
                     </div>
                 )}
             </div>

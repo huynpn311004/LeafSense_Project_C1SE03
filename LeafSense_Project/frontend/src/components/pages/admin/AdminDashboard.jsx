@@ -191,7 +191,7 @@ const AdminDashboard = () => {
         <div className="stat-card">
           <div className="stat-icon discount">💸</div>
           <div className="stat-content">
-            <h3>${couponStats.total_discount_given.toFixed(0)}</h3>
+            <h3>{couponStats.total_discount_given.toLocaleString('vi-VN')}₫</h3>
             <p>Total Discount</p>
             <small>{couponStats.total_usage} times used</small>
           </div>
