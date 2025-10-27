@@ -1,0 +1,93 @@
+# Bỏ môi trường ảo
+myvenv_project/
+venv/
+env/
+.venv/
+*.venv
+
+# Bỏ file môi trường
+.env
+*.env
+backend/.env
+backend\.env
+*/.env
+**/.env
+
+# Bỏ khóa Firebase và config nhạy cảm
+backend/core/firebase-key.json
+backend/core/firebase_config.py
+**/firebase-key.json
+**/firebase_config.py
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!.vscode/*.json
+
+# Bỏ các file secret và key khác
+*.pem
+*.key
+*.cert
+*.p12
+*secret*
+*password*
+*credential*
+
+# Bỏ cache và thư viện tạm
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.DS_Store
+*.tmp
+*.temp
+
+# Bỏ model files (thường rất nặng)
+*.pt
+*.pth
+*.h5
+*.pkl
+*.pickle
+*.model
+*.weights
+*.ckpt
+
+# Bỏ dataset (rất nặng)
+ml_model/dataset/
+dataset/
+data/
+*/dataset/
+*/data/
+
+# Bỏ node_modules
+node_modules/
+*/node_modules/
+
+# Bỏ thư mục upload
+uploads/
+*/uploads/
+backend/uploads/
+
+# Bỏ các file build và dist
+dist/
+build/
+*.egg-info/
+
+# Bỏ các file IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Bỏ các file backup
+*.bak
+*.backup
+*~
+
+# Bỏ file zip, rar và các archive
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz

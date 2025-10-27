@@ -1,0 +1,381 @@
+.admin-products {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding: 15px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.admin-header-left h1 {
+  color: #2c5234;
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 5px 0;
+}
+
+.admin-header-left p {
+  color: #666;
+  margin: 0;
+}
+
+.logout-btn {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #d32f2f;
+}
+
+.admin-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  color: #666;
+}
+
+.nav-btn:hover {
+  background: #f0f0f0;
+  color: #2c5234;
+}
+
+.nav-btn.active {
+  background: #2c5234;
+  color: white;
+}
+
+.products-controls {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  align-items: center;
+}
+
+.search-box {
+  flex: 1;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #2c5234;
+}
+
+.filter-box select {
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.filter-box select:focus {
+  outline: none;
+  border-color: #2c5234;
+}
+
+.add-btn {
+  background: #2c5234;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.add-btn:hover {
+  background: #1e3b26;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+}
+
+.product-image {
+  height: 180px;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-image {
+  font-size: 35px;
+  color: #ccc;
+}
+
+.product-info {
+  padding: 15px;
+}
+
+.product-info h3 {
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.product-description {
+  color: #666;
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.product-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.price {
+  color: #2c5234;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.stock {
+  color: #666;
+  font-size: 13px;
+}
+
+.product-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-btn {
+  background: #2196f3;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.edit-btn:hover {
+  background: #1976d2;
+}
+
+.delete-btn {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.delete-btn:hover {
+  background: #d32f2f;
+}
+
+.no-data {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+  grid-column: 1 / -1;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.modal-header h2 {
+  color: #2c5234;
+  margin: 0;
+}
+
+.modal-header button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-form {
+  padding: 15px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #333;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #2c5234;
+}
+
+.form-group textarea {
+  height: 80px;
+  resize: vertical;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 15px;
+}
+
+.modal-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.modal-actions button[type="button"] {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.modal-actions button[type="button"]:hover {
+  background: #e0e0e0;
+}
+
+.modal-actions button[type="submit"] {
+  background: #2c5234;
+  color: white;
+}
+
+.modal-actions button[type="submit"]:hover {
+  background: #1e3b26;
+}
