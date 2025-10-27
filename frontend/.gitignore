@@ -1,0 +1,62 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+backend\core\firebase-key.json
+myvenv_project
+backend\.env
+.env
+venv/
+env/
+
+__pycache__/
+*.pyc
+*.log
+
+# Bỏ môi trường ảo
+
+myvenv_project/
+venv/
+env/
+
+# Bỏ file môi trường
+.env
+backend/.env
+
+# Bỏ khóa Firebase
+backend/core/firebase-key.json
+
+# Bỏ cache và thư viện tạm
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+
+# Bỏ thư mục nặng
+runs/
+outputs/
+checkpoints/
+node_modules/
+build/
+dist/
