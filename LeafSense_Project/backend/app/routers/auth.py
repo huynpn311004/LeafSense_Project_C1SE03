@@ -39,7 +39,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
         name=user.name,
         email=user.email,
         password=hashed_password,
-        provider="normal"  # Mark this as a regular registration account
+        provider="normal"  # Đánh dấu đây là tài khoản đăng ký thông thường
     )
     db.add(new_user)
     db.commit()
@@ -59,15 +59,14 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check if account is locked
+    # Kiểm tra tài khoản có bị khóa không
     if db_user.status == "inactive":
         raise HTTPException(
-            status_code=403, 
-            detail="Your account has been locked. Please contact leafsensehotro@gmail.com to unlock your account",
-            headers={"WWW-Authenticate": "Bearer"}
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản của bạn đã bị khóa. Vui lòng liên hệ email leafsensehotro@gmail.com.vn để được mở tài khoản",
         )
 
-    # Create access token
+    # Tạo access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": db_user.email}, expires_delta=access_token_expires
@@ -104,7 +103,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         user_info = token.get("userinfo")
 
         if not user_info:
-            raise HTTPException(status_code=400, detail="Unable to get information from Google")
+            raise HTTPException(status_code=400, detail="Không lấy được thông tin từ Google")
 
         email = user_info.get("email")
         name = user_info.get("name")
@@ -116,23 +115,23 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
             user = User(
                 name=name,
                 email=email,
-                password=None,  # Google login doesn't need password
+                password=None,  # Google login không cần mật khẩu
                 avatar_url=picture,
                 role="farmer",
                 status="active",
-                provider="google"  # Mark this as a Google account
+                provider="google"  # Đánh dấu đây là tài khoản Google
             )
             db.add(user)
             db.commit()
             db.refresh(user)
 
-        # Check if account is locked
+        # Kiểm tra tài khoản có bị khóa không
         if user.status == "inactive":
-            # Redirect to frontend with error message
+            # Redirect về frontend với thông báo lỗi
             error_url = "http://localhost:5173/account-locked"
             return RedirectResponse(url=error_url)
 
-        # 🔑 Create JWT token
+        # 🔑 Tạo JWT token
         expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(data={"sub": user.email}, expires_delta=expires)
 
@@ -147,8 +146,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url=redirect_url)
 
     except Exception as e:
-        print(f"❌ Google OAuth Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Google OAuth Error: {e}")
+        print(f"❌ Lỗi Google OAuth: {e}")
+        raise HTTPException(status_code=500, detail=f"Lỗi Google OAuth: {e}")
 
 def send_reset_email(email_to: str, user_name: str, reset_url: str):
     # Email settings
@@ -159,19 +158,19 @@ def send_reset_email(email_to: str, user_name: str, reset_url: str):
 
     # Create message
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Password Reset - LeafSense"
+    msg["Subject"] = "Đặt Lại Mật Khẩu - LeafSense"
     msg["From"] = smtp_username
     msg["To"] = email_to
 
     # HTML Content
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        # <img src="https://i.imgur.com/XYZ123.png" alt="LeafSense Logo" style="max-width: 200px; margin-bottom: 20px;">
+        <img src="https://i.imgur.com/XYZ123.png" alt="LeafSense Logo" style="max-width: 200px; margin-bottom: 20px;">
         <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h2 style="color: #2E7D32; margin-bottom: 20px;">Password Reset</h2>
-            <p style="color: #333333;">Hello {user_name},</p>
-            <p style="color: #333333;">We received a request to reset the password for your LeafSense account.</p>
-            <p style="color: #333333;">Please click the button below to reset your password:</p>
+            <h2 style="color: #2E7D32; margin-bottom: 20px;">Đặt Lại Mật Khẩu</h2>
+            <p style="color: #333333;">Xin chào {user_name},</p>
+            <p style="color: #333333;">Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản LeafSense của bạn.</p>
+            <p style="color: #333333;">Vui lòng click vào nút bên dưới để đặt lại mật khẩu:</p>
             <div style="text-align: center; margin: 30px 0;">
                 <a href="{reset_url}" 
                    style="background-color: #2E7D32; 
@@ -180,15 +179,15 @@ def send_reset_email(email_to: str, user_name: str, reset_url: str):
                           text-decoration: none; 
                           border-radius: 4px;
                           display: inline-block;">
-                    Reset Password
+                    Đặt Lại Mật Khẩu
                 </a>
             </div>
-            <p style="color: #666666; font-size: 14px;">This link will expire in 1 hour.</p>
-            <p style="color: #666666; font-size: 14px;">If you did not request a password reset, please ignore this email.</p>
+            <p style="color: #666666; font-size: 14px;">Link này sẽ hết hạn sau 1 giờ.</p>
+            <p style="color: #666666; font-size: 14px;">Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
             <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
             <p style="color: #999999; font-size: 12px;">
-                Best regards,<br>
-                LeafSense Team
+                Trân trọng,<br>
+                Đội ngũ LeafSense
             </p>
         </div>
     </div>

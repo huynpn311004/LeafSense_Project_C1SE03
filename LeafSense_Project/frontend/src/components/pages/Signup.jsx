@@ -5,7 +5,7 @@ import './Signup.css';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    name: '',      // sửa lại fullName -> name để khớp với backend
     email: '',
     password: '',
     confirmPassword: ''
@@ -15,14 +15,14 @@ const Signup = () => {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showTermsModal, setShowTermsModal] = useState(false);
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -30,44 +30,41 @@ const Signup = () => {
     setError('');
     setSuccess('');
 
-    // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match!');
+      setError('Mật khẩu xác nhận không khớp!');
       return;
     }
-    
-    // Check if user agreed to terms
     if (!agreeToTerms) {
-      setError('Please agree to the Terms & Privacy Policy!');
+      setError('Vui lòng đồng ý với Điều khoản & Chính sách bảo mật!');
       return;
     }
 
     try {
-      // Call backend API
-      const response = await axios.post('http://localhost:8000/api/auth/signup', {
+      // Gọi API backend FastAPI
+      const res = await axios.post('http://localhost:8000/api/auth/signup', {
         name: formData.name,
         email: formData.email,
         password: formData.password
       });
 
-      if (response.status === 200 || response.status === 201) {
-        setSuccess('Account created successfully!');
+      if (res.status === 200 || res.status === 201) {
+        setSuccess('Đăng ký tài khoản thành công!');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
       }
-    } catch (error) {
-      console.error(error);
-      setError('Email already exists or registration failed.');
+    } catch (err) {
+      console.error(err);
+      setError('Email đã được sử dụng hoặc có lỗi khi đăng ký.');
     }
   };
 
   return (
     <div className="signup-container">
-      {/* Left side - logo */}
+      {/* Bên trái logo */}
       <div className="signup-left">
         <div className="signup-left-content">
-          <h1 className="logo-text signup-logo">LeafSense</h1>
+          <h1 className="logo-text">LeafSense</h1>
           <div className="leaf-pattern">
             {[...Array(9)].map((_, i) => (
               <div key={i} className={`leaf leaf-${i + 1}`}></div>
@@ -76,13 +73,13 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Right side - form */}
+      {/* Bên phải form */}
       <div className="signup-right">
         <div className="signup-form-container">
           <h2 className="signup-title">Create your account</h2>
 
-          {error && <p className="signup-error-message">{error}</p>}
-          {success && <p className="signup-success-message">{success}</p>}
+          {error && <p className="error-message">{error}</p>}
+          {success && <p className="success-message">{success}</p>}
 
           <form onSubmit={handleSubmit} className="signup-form">
             <div className="form-group">
@@ -126,7 +123,8 @@ const Signup = () => {
                 <button
                   type="button"
                   className="toggle-btn"
-                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  onClick={() => setShowPassword((v) => !v)}
                 >
                   {showPassword ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -158,7 +156,8 @@ const Signup = () => {
                 <button
                   type="button"
                   className="toggle-btn"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  onClick={() => setShowConfirmPassword((v) => !v)}
                 >
                   {showConfirmPassword ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -184,16 +183,7 @@ const Signup = () => {
                 required
               />
               <label htmlFor="agreeToTerms">
-                I agree to the <a 
-                  href="#" 
-                  className="terms-link"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowTermsModal(true);
-                  }}
-                >
-                  Terms & Privacy Policy
-                </a>
+                I agree to the <a href="#" className="terms-link">Terms & Privacy Policy</a>
               </label>
             </div>
 
@@ -202,7 +192,7 @@ const Signup = () => {
             </button>
           </form>
 
-          <div className="signup-divider">
+          <div className="divider">
             <span>or</span>
           </div>
 
@@ -226,46 +216,6 @@ const Signup = () => {
           </div>
         </div>
       </div>
-
-      {/* Terms Modal */}
-      {showTermsModal && (
-        <div className="modal-overlay" onClick={() => setShowTermsModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-body">
-              <h3>Terms of Service</h3>
-              <p>
-                Welcome to LeafSense! By using our service, 
-                you agree to the following terms:
-              </p>
-              <ul>
-                <li>Use the service responsibly and legally</li>
-                <li>Do not share your login information with others</li>
-                <li>Provide accurate information when registering</li>
-                <li>Follow security and information safety regulations</li>
-              </ul>
-
-              <h3>Privacy Policy</h3>
-              <p>
-                We are committed to protecting your privacy:
-              </p>
-              <ul>
-                <li>Personal information is encrypted and secured</li>
-                <li>We do not share data with third parties without consent</li>
-                <li>We only collect information necessary for the service</li>
-                <li>You have the right to request deletion of personal data at any time</li>
-              </ul>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="modal-close-btn" 
-                onClick={() => setShowTermsModal(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import List, Optional
 from decimal import Decimal
-from datetime import datetime
 
 from core.database import get_db
 from core.security import get_current_user, verify_password, get_password_hash
@@ -12,13 +11,11 @@ from app.models.product import Product
 from app.models.category import Category
 from app.models.order import Order
 from app.models.order_item import OrderItem
-from app.models.post import Post
 from app.schemas.admin_schema import (
     AdminLogin, AdminResponse, UserUpdate, UserResponse,
     ProductCreate, ProductUpdate, ProductResponse,
     CategoryCreate, CategoryUpdate, CategoryResponse,
-    OrderResponse, OrderUpdate, DashboardStats,
-    PostModerationResponse, PostStatusUpdate, PostModerationStats, UserBasicInfo
+    OrderResponse, OrderUpdate, DashboardStats
 )
 from app.schemas.user_schema import ChangePassword
 
@@ -397,36 +394,7 @@ def update_order(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    # Store old status to check if we need to restore stock
-    old_status = order.status
-    
     update_data = order_update.dict(exclude_unset=True)
-    
-    # Xử lý mapping status và cập nhật timestamp
-    if "status" in update_data:
-        status_value = update_data["status"]
-        from datetime import datetime
-        
-        if status_value == "shipping":
-            # Admin bấm "Giao hàng" -> status = "shipping" (Đang giao hàng)
-            order.shipped_at = datetime.utcnow()
-        elif status_value == "shipped" or status_value == "completed":
-            # Admin bấm "Đã giao" -> status = "completed" (Hoàn thành)
-            update_data["status"] = "completed"
-            order.delivered_at = datetime.utcnow()
-        
-        # Restore stock if order is being cancelled (and wasn't already cancelled)
-        if status_value == "cancelled" and old_status != "cancelled":
-            # Restore stock for each item in the order
-            from app.models.order_item import OrderItem
-            order_items = db.query(OrderItem).filter(OrderItem.order_id == order_id).all()
-            
-            for item in order_items:
-                product = db.query(Product).filter(Product.id == item.product_id).first()
-                if product:
-                    product.stock += item.quantity
-                    db.add(product)
-    
     for field, value in update_data.items():
         setattr(order, field, value)
     
@@ -466,200 +434,3 @@ def get_dashboard_stats(admin: User = Depends(get_admin_user), db: Session = Dep
         pending_orders=pending_orders,
         active_users=active_users
     )
-
-# ==================== POST MODERATION ====================
-
-@router.get("/posts", response_model=List[PostModerationResponse])
-def get_all_posts_for_moderation(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    status_filter: Optional[str] = Query(None),
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Lấy danh sách tất cả bài viết để kiểm duyệt"""
-    from sqlalchemy.orm import joinedload
-    
-    query = db.query(Post).options(joinedload(Post.user))
-    
-    # Filter by status
-    if status_filter:
-        query = query.filter(Post.status == status_filter)
-    
-    posts = query.order_by(desc(Post.created_at)).offset(skip).limit(limit).all()
-    
-    return posts
-
-@router.get("/posts/pending", response_model=List[PostModerationResponse])
-def get_pending_posts(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Lấy danh sách bài viết chờ duyệt"""
-    from sqlalchemy.orm import joinedload
-    
-    posts = db.query(Post)\
-        .options(joinedload(Post.user))\
-        .filter(Post.status == "pending")\
-        .order_by(Post.created_at)\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
-    
-    return posts
-
-@router.get("/posts/stats", response_model=PostModerationStats)
-def get_post_moderation_stats(
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Lấy thống kê kiểm duyệt bài viết"""
-    from sqlalchemy.orm import joinedload
-    
-    # Đếm số lượng bài viết theo trạng thái
-    total_pending = db.query(Post).filter(Post.status == "pending").count()
-    total_published = db.query(Post).filter(Post.status == "published").count()
-    total_rejected = db.query(Post).filter(Post.status == "rejected").count()
-    
-    # Lấy 5 bài viết gần nhất cần xử lý
-    recent_posts = db.query(Post)\
-        .options(joinedload(Post.user))\
-        .filter(Post.status == "pending")\
-        .order_by(Post.created_at)\
-        .limit(5)\
-        .all()
-    
-    return PostModerationStats(
-        total_pending=total_pending,
-        total_published=total_published,
-        total_rejected=total_rejected,
-        recent_posts=recent_posts
-    )
-
-@router.put("/posts/{post_id}/approve")
-def approve_post(
-    post_id: int,
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Phê duyệt bài viết"""
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    if post.status != "pending":
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Cannot approve post with status: {post.status}"
-        )
-    
-    post.status = "published"
-    post.updated_at = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(post)
-    
-    return {
-        "message": "Post approved successfully",
-        "post_id": post.id,
-        "title": post.title,
-        "status": post.status
-    }
-
-@router.put("/posts/{post_id}/reject")
-def reject_post(
-    post_id: int,
-    rejection_data: PostStatusUpdate,
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Từ chối bài viết"""
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    if post.status != "pending":
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Cannot reject post with status: {post.status}"
-        )
-    
-    post.status = "rejected"
-    post.updated_at = datetime.utcnow()
-    
-    # Có thể lưu lý do từ chối vào content hoặc tạo bảng riêng
-    # Ở đây tôi sẽ thêm comment về lý do từ chối
-    if rejection_data.rejection_reason:
-        # Thêm lý do từ chối vào cuối content
-        post.content += f"\n\n[ADMIN REJECTION REASON: {rejection_data.rejection_reason}]"
-    
-    db.commit()
-    db.refresh(post)
-    
-    return {
-        "message": "Post rejected successfully",
-        "post_id": post.id,
-        "title": post.title,
-        "status": post.status,
-        "rejection_reason": rejection_data.rejection_reason
-    }
-
-@router.put("/posts/{post_id}/status")
-def update_post_status(
-    post_id: int,
-    status_data: PostStatusUpdate,
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Cập nhật trạng thái bài viết"""
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    # Validate status
-    valid_statuses = ["pending", "published", "rejected", "archived"]
-    if status_data.status not in valid_statuses:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid status. Must be one of: {valid_statuses}"
-        )
-    
-    old_status = post.status
-    post.status = status_data.status
-    post.updated_at = datetime.utcnow()
-    
-    # Nếu từ chối và có lý do
-    if status_data.status == "rejected" and status_data.rejection_reason:
-        post.content += f"\n\n[ADMIN REJECTION REASON: {status_data.rejection_reason}]"
-    
-    db.commit()
-    db.refresh(post)
-    
-    return {
-        "message": f"Post status updated from {old_status} to {status_data.status}",
-        "post_id": post.id,
-        "title": post.title,
-        "old_status": old_status,
-        "new_status": post.status
-    }
-
-@router.delete("/posts/{post_id}")
-def delete_post_by_admin(
-    post_id: int,
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Admin xóa bài viết"""
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    db.delete(post)
-    db.commit()
-    
-    return {
-        "message": "Post deleted successfully by admin",
-        "post_id": post_id
-    }

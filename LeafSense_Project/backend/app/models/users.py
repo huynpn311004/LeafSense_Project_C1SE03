@@ -24,10 +24,6 @@ class User(Base):
     cart = relationship("Cart", back_populates="user", uselist=False)
     orders = relationship("Order", back_populates="user")
     reviews = relationship("Review", back_populates="user")
-    chat_history = relationship("ChatHistory", back_populates="user")
-    posts = relationship("Post", back_populates="user")
-    comments = relationship("Comment", back_populates="user")
-    # reactions = relationship("Reaction", back_populates="user")  # Commented out to fix import issue
 
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"

@@ -5,11 +5,11 @@ from datetime import datetime
 import enum
 
 class OrderStatus(str, enum.Enum):
-    PENDING = "pending"          # Chờ xử lý
-    PROCESSING = "processing"    # Đang xử lý
-    SHIPPING = "shipping"        # Đang giao hàng
-    COMPLETED = "completed"      # Hoàn thành
-    CANCELLED = "cancelled"      # Đã hủy
+    PENDING = "pending"
+    PROCESSING = "processing"
+    SHIPPING = "shipping"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
 
 class PaymentMethod(str, enum.Enum):
     COD = "COD"

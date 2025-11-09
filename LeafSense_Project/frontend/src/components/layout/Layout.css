@@ -10,7 +10,7 @@
 
 /* Sidebar */
 .sidebar {
-  width: 320px;
+  width: 280px;
   background: linear-gradient(135deg, #2d5a3d 0%, #1e3d2a 100%);
   display: flex;
   flex-direction: column;
@@ -28,11 +28,12 @@
 }
 
 .logo-text {
-  color: #ffffff !important;
+  color: #ffffff;
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.025em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-nav {
@@ -111,7 +112,7 @@
   height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  margin-right: 1.25rem !important;
+  margin-right: 0.75rem;
   flex-shrink: 0;
 }
 
@@ -144,8 +145,9 @@
   font-size: 0.95rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
-  word-wrap: break-word;
-  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-email {
@@ -215,7 +217,7 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
   .sidebar {
-    width: 300px;
+    width: 260px;
   }
   
   .logo-text {
@@ -294,7 +296,7 @@
   }
   
   .user-avatar {
-    margin-right: 1.25rem !important;
+    margin-right: 0;
     margin-bottom: 0.5rem;
     width: 35px;
     height: 35px;

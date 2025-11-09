@@ -238,7 +238,7 @@ async def analyze_image(
             try:
                 db.rollback()
             except Exception as rollback_error:
-                pass
+                logger.error(f"Rollback error: {str(rollback_error)}")
 
     # 7️⃣ Trả về kết quả (cho cả trường hợp đã đăng nhập hoặc chưa)
     response_data = {

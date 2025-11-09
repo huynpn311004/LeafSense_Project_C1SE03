@@ -45,11 +45,11 @@ const AdminOrders = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Order status updated successfully')
+      toast.success('Cập nhật trạng thái đơn hàng thành công')
       fetchOrders()
     } catch (error) {
       console.error('Error updating order status:', error)
-      toast.error('Failed to update order status')
+      toast.error('Cập nhật trạng thái đơn hàng thất bại')
     }
   }
 
@@ -57,8 +57,8 @@ const AdminOrders = () => {
     switch (status) {
       case 'pending': return '#ff9800'
       case 'processing': return '#2196f3'
-      case 'shipping': return '#9c27b0'
-      case 'completed': return '#4caf50'
+      case 'shipped': return '#9c27b0'
+      case 'delivered': return '#4caf50'
       case 'cancelled': return '#f44336'
       default: return '#666'
     }
@@ -66,11 +66,11 @@ const AdminOrders = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending': return 'Pending'
-      case 'processing': return 'Processing'
-      case 'shipping': return 'Shipping'
-      case 'completed': return 'Completed'
-      case 'cancelled': return 'Cancelled'
+      case 'pending': return 'Chờ xử lý'
+      case 'processing': return 'Đang xử lý'
+      case 'shipped': return 'Đã giao hàng'
+      case 'delivered': return 'Đã nhận hàng'
+      case 'cancelled': return 'Đã hủy'
       default: return status
     }
   }
@@ -79,12 +79,13 @@ const AdminOrders = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
+    toast.success('Đã đăng xuất')
   }
 
   if (loading) {
     return (
       <div className="admin-orders">
-        <div className="loading">Loading...</div>
+        <div className="loading">Đang tải...</div>
       </div>
     )
   }
@@ -93,12 +94,12 @@ const AdminOrders = () => {
     <div className="admin-orders">
       <div className="admin-header">
         <div className="admin-header-left">
-          <h1>Order Management</h1>
-          <p>Review and manage orders</p>
+          <h1>Quản lý Đơn hàng</h1>
+          <p>Duyệt và quản lý đơn hàng</p>
         </div>
         <div className="admin-header-right">
           <button onClick={handleLogout} className="logout-btn">
-            Logout
+            Đăng xuất
           </button>
         </div>
       </div>
@@ -114,43 +115,31 @@ const AdminOrders = () => {
           className="nav-btn"
           onClick={() => navigate('/admin/users')}
         >
-          User Management
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/categories')}
-        >
-          Category Management
+          Quản lý Users
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/products')}
         >
-          Product Management
+          Quản lý Sản phẩm
         </button>
         <button 
           className="nav-btn active"
           onClick={() => navigate('/admin/orders')}
         >
-          Order Management
+          Quản lý Đơn hàng
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/categories')}
+        >
+          Quản lý Danh mục
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/coupons')}
         >
-          Coupon Management
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/community')}
-        >
-          Community Management
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/settings')}
-        >
-          Settings
+          Quản lý Mã giảm giá
         </button>
       </div>
 
@@ -160,12 +149,12 @@ const AdminOrders = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="shipping">Shipping</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value="pending">Chờ xử lý</option>
+            <option value="processing">Đang xử lý</option>
+            <option value="shipped">Đã giao hàng</option>
+            <option value="delivered">Đã nhận hàng</option>
+            <option value="cancelled">Đã hủy</option>
           </select>
         </div>
       </div>
@@ -175,8 +164,8 @@ const AdminOrders = () => {
           <div key={order.id} className="order-card">
             <div className="order-header">
               <div className="order-info">
-                <h3>Order #{order.id}</h3>
-                <p>Order Date: {new Date(order.created_at).toLocaleDateString('en-US')}</p>
+                <h3>Đơn hàng #{order.id}</h3>
+                <p>Ngày đặt: {new Date(order.created_at).toLocaleDateString('vi-VN')}</p>
               </div>
               <div className="order-status">
                 <span 
@@ -190,25 +179,25 @@ const AdminOrders = () => {
 
             <div className="order-details">
               <div className="customer-info">
-                <h4>Customer Information</h4>
-                <p><strong>Name:</strong> {order.shipping_name}</p>
-                <p><strong>Phone:</strong> {order.shipping_phone}</p>
-                <p><strong>Address:</strong> {order.shipping_address}</p>
+                <h4>Thông tin khách hàng</h4>
+                <p><strong>Tên:</strong> {order.shipping_name}</p>
+                <p><strong>SĐT:</strong> {order.shipping_phone}</p>
+                <p><strong>Địa chỉ:</strong> {order.shipping_address}</p>
               </div>
 
               <div className="order-summary">
-                <h4>Order Details</h4>
+                <h4>Chi tiết đơn hàng</h4>
                 <div className="order-items">
                   {order.order_items && order.order_items.map((item, index) => (
                     <div key={index} className="order-item">
-                      <span>Product ID: {item.product_id}</span>
-                      <span>Quantity: {item.quantity}</span>
-                      <span>Price: {item.price.toLocaleString('vi-VN')}₫</span>
+                      <span>Sản phẩm ID: {item.product_id}</span>
+                      <span>Số lượng: {item.quantity}</span>
+                      <span>Giá: {item.price.toLocaleString('vi-VN')}₫</span>
                     </div>
                   ))}
                 </div>
                 <div className="order-total">
-                  <strong>Total Amount: {order.total_amount.toLocaleString('vi-VN')}₫</strong>
+                  <strong>Tổng tiền: {order.total_amount.toLocaleString('vi-VN')}₫</strong>
                 </div>
               </div>
             </div>
@@ -220,30 +209,30 @@ const AdminOrders = () => {
                     className="action-btn process"
                     onClick={() => handleUpdateOrderStatus(order.id, 'processing')}
                   >
-                    Process Order
+                    Xử lý đơn hàng
                   </button>
                   <button 
                     className="action-btn cancel"
                     onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
                   >
-                    Cancel Order
+                    Hủy đơn hàng
                   </button>
                 </>
               )}
               {order.status === 'processing' && (
                 <button 
                   className="action-btn ship"
-                  onClick={() => handleUpdateOrderStatus(order.id, 'shipping')}
+                  onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
                 >
-                  Ship Order
+                  Giao hàng
                 </button>
               )}
-              {order.status === 'shipping' && (
+              {order.status === 'shipped' && (
                 <button 
                   className="action-btn deliver"
-                  onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                  onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
                 >
-                  Mark Completed
+                  Xác nhận đã nhận
                 </button>
               )}
             </div>
@@ -252,7 +241,7 @@ const AdminOrders = () => {
         
         {orders.length === 0 && (
           <div className="no-data">
-            <p>No orders available</p>
+            <p>Không có đơn hàng nào</p>
           </div>
         )}
       </div>
