@@ -78,13 +78,13 @@ const AdminProducts = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Thêm sản phẩm thành công')
+      toast.success('Product added successfully')
       setShowAddModal(false)
       resetForm()
       fetchProducts()
     } catch (error) {
       console.error('Error adding product:', error)
-      toast.error('Thêm sản phẩm thất bại')
+      toast.error('Failed to add product')
     }
   }
 
@@ -103,29 +103,29 @@ const AdminProducts = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Cập nhật sản phẩm thành công')
+      toast.success('Product updated successfully')
       setShowEditModal(false)
       setEditingProduct(null)
       resetForm()
       fetchProducts()
     } catch (error) {
       console.error('Error updating product:', error)
-      toast.error('Cập nhật sản phẩm thất bại')
+      toast.error('Failed to update product')
     }
   }
 
   const handleDeleteProduct = async (productId, productName) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${productName}"?`)) {
+    if (window.confirm(`Are you sure you want to delete product "${productName}"?`)) {
       try {
         const token = localStorage.getItem('token')
         await axios.delete(`http://localhost:8000/api/admin/products/${productId}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
-        toast.success('Xóa sản phẩm thành công')
+        toast.success('Product deleted successfully')
         fetchProducts()
       } catch (error) {
         console.error('Error deleting product:', error)
-        toast.error('Xóa sản phẩm thất bại')
+        toast.error('Failed to delete product')
       }
     }
   }
@@ -158,13 +158,12 @@ const AdminProducts = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
-    toast.success('Đã đăng xuất')
   }
 
   if (loading) {
     return (
       <div className="admin-products">
-        <div className="loading">Đang tải...</div>
+        <div className="loading">Loading...</div>
       </div>
     )
   }
@@ -173,12 +172,12 @@ const AdminProducts = () => {
     <div className="admin-products">
       <div className="admin-header">
         <div className="admin-header-left">
-          <h1>Quản lý Sản phẩm</h1>
-          <p>Quản lý sản phẩm và danh mục</p>
+          <h1>Product Management</h1>
+          <p>Manage products and categories</p>
         </div>
         <div className="admin-header-right">
           <button onClick={handleLogout} className="logout-btn">
-            Đăng xuất
+            Logout
           </button>
         </div>
       </div>
@@ -194,31 +193,43 @@ const AdminProducts = () => {
           className="nav-btn"
           onClick={() => navigate('/admin/users')}
         >
-          Quản lý Users
-        </button>
-        <button 
-          className="nav-btn active"
-          onClick={() => navigate('/admin/products')}
-        >
-          Quản lý Sản phẩm
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/orders')}
-        >
-          Quản lý Đơn hàng
+          User Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/categories')}
         >
-          Quản lý Danh mục
+          Category Management
+        </button>
+        <button 
+          className="nav-btn active"
+          onClick={() => navigate('/admin/products')}
+        >
+          Product Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/orders')}
+        >
+          Order Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/coupons')}
         >
-          Quản lý Mã giảm giá
+          Coupon Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/community')}
+        >
+          Community Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/settings')}
+        >
+          Settings
         </button>
       </div>
 
@@ -226,7 +237,7 @@ const AdminProducts = () => {
         <div className="search-box">
           <input
             type="text"
-            placeholder="Tìm kiếm sản phẩm..."
+            placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -236,7 +247,7 @@ const AdminProducts = () => {
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
-            <option value="">Tất cả danh mục</option>
+            <option value="">All Categories</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -248,7 +259,7 @@ const AdminProducts = () => {
           className="add-btn"
           onClick={() => setShowAddModal(true)}
         >
-          Thêm sản phẩm
+          Add Product
         </button>
       </div>
 
@@ -267,20 +278,20 @@ const AdminProducts = () => {
               <p className="product-description">{product.description}</p>
               <div className="product-details">
                 <span className="price">{product.price.toLocaleString('vi-VN')}₫</span>
-                <span className="stock">Còn: {product.stock}</span>
+                <span className="stock">Stock: {product.stock}</span>
               </div>
               <div className="product-actions">
                 <button 
                   className="edit-btn"
                   onClick={() => openEditModal(product)}
                 >
-                  Sửa
+                  Edit
                 </button>
                 <button 
                   className="delete-btn"
                   onClick={() => handleDeleteProduct(product.id, product.name)}
                 >
-                  Xóa
+                  Delete
                 </button>
               </div>
             </div>
@@ -289,7 +300,7 @@ const AdminProducts = () => {
         
         {products.length === 0 && (
           <div className="no-data">
-            <p>Không có sản phẩm nào</p>
+            <p>No products available</p>
           </div>
         )}
       </div>
@@ -299,12 +310,12 @@ const AdminProducts = () => {
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Thêm sản phẩm mới</h2>
+              <h2>Add New Product</h2>
               <button onClick={() => setShowAddModal(false)}>×</button>
             </div>
             <form onSubmit={handleAddProduct} className="modal-form">
               <div className="form-group">
-                <label>Tên sản phẩm</label>
+                <label>Product Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -313,7 +324,7 @@ const AdminProducts = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Mô tả</label>
+                <label>Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -321,7 +332,7 @@ const AdminProducts = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Giá</label>
+                  <label>Price</label>
                   <input
                     type="number"
                     step="0.01"
@@ -331,7 +342,7 @@ const AdminProducts = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Số lượng</label>
+                  <label>Stock Quantity</label>
                   <input
                     type="number"
                     value={formData.stock}
@@ -341,12 +352,12 @@ const AdminProducts = () => {
                 </div>
               </div>
               <div className="form-group">
-                <label>Danh mục</label>
+                <label>Category</label>
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                 >
-                  <option value="">Chọn danh mục</option>
+                  <option value="">Select Category</option>
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -355,7 +366,7 @@ const AdminProducts = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>URL hình ảnh</label>
+                <label>Image URL</label>
                 <input
                   type="url"
                   value={formData.image_url}
@@ -364,9 +375,9 @@ const AdminProducts = () => {
               </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowAddModal(false)}>
-                  Hủy
+                  Cancel
                 </button>
-                <button type="submit">Thêm</button>
+                <button type="submit">Add</button>
               </div>
             </form>
           </div>
@@ -378,12 +389,12 @@ const AdminProducts = () => {
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Sửa sản phẩm</h2>
+              <h2>Edit Product</h2>
               <button onClick={() => setShowEditModal(false)}>×</button>
             </div>
             <form onSubmit={handleEditProduct} className="modal-form">
               <div className="form-group">
-                <label>Tên sản phẩm</label>
+                <label>Product Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -392,7 +403,7 @@ const AdminProducts = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Mô tả</label>
+                <label>Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -400,7 +411,7 @@ const AdminProducts = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Giá</label>
+                  <label>Price</label>
                   <input
                     type="number"
                     step="0.01"
@@ -410,7 +421,7 @@ const AdminProducts = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Số lượng</label>
+                  <label>Stock Quantity</label>
                   <input
                     type="number"
                     value={formData.stock}
@@ -420,12 +431,12 @@ const AdminProducts = () => {
                 </div>
               </div>
               <div className="form-group">
-                <label>Danh mục</label>
+                <label>Category</label>
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                 >
-                  <option value="">Chọn danh mục</option>
+                  <option value="">Select Category</option>
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -434,7 +445,7 @@ const AdminProducts = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>URL hình ảnh</label>
+                <label>Image URL</label>
                 <input
                   type="url"
                   value={formData.image_url}
@@ -443,9 +454,9 @@ const AdminProducts = () => {
               </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowEditModal(false)}>
-                  Hủy
+                  Cancel
                 </button>
-                <button type="submit">Cập nhật</button>
+                <button type="submit">Update</button>
               </div>
             </form>
           </div>

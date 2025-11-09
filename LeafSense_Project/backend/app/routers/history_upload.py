@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from datetime import datetime
+from sqlalchemy import desc, func, and_
+from datetime import datetime, timedelta
 
 from ..models.users import User
 from ..models.disease_prediction import DiseasePrediction
+from ..models.order import Order
 from core.database import get_db
 from core.security import get_current_user
 
@@ -157,3 +158,134 @@ def delete_prediction(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting prediction: {str(e)}")
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get dashboard statistics for the current user
+    """
+    try:
+        # Lấy tổng số phân tích
+        total_analysis = db.query(DiseasePrediction).filter(
+            DiseasePrediction.user_id == current_user.id
+        ).count()
+        
+        # Lấy số bệnh được phát hiện (loại trừ nodisease)
+        diseases_detected = db.query(DiseasePrediction).filter(
+            and_(
+                DiseasePrediction.user_id == current_user.id,
+                DiseasePrediction.disease_type != 'nodisease',
+                DiseasePrediction.disease_type.isnot(None)
+            )
+        ).count()
+        
+        # Tính accuracy rate dựa trên confidence trung bình
+        avg_confidence_result = db.query(func.avg(DiseasePrediction.confidence)).filter(
+            DiseasePrediction.user_id == current_user.id
+        ).scalar()
+        accuracy_rate = round(avg_confidence_result * 100, 1) if avg_confidence_result else 0
+        
+        # Lấy số phân tích trong tháng này
+        current_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        this_month_analysis = db.query(DiseasePrediction).filter(
+            and_(
+                DiseasePrediction.user_id == current_user.id,
+                DiseasePrediction.created_at >= current_month_start
+            )
+        ).count()
+        
+        # Lấy thống kê đơn hàng
+        total_orders = db.query(Order).filter(
+            Order.user_id == current_user.id
+        ).count()
+        
+        pending_orders = db.query(Order).filter(
+            and_(
+                Order.user_id == current_user.id,
+                Order.status == 'pending'
+            )
+        ).count()
+        
+        completed_orders = db.query(Order).filter(
+            and_(
+                Order.user_id == current_user.id,
+                Order.status.in_(['completed', 'delivered'])
+            )
+        ).count()
+        
+        # Tính tổng tiền đã chi tiêu
+        total_spent_result = db.query(func.sum(Order.total_amount)).filter(
+            and_(
+                Order.user_id == current_user.id,
+                Order.status.in_(['completed', 'delivered'])
+            )
+        ).scalar()
+        total_spent = float(total_spent_result) if total_spent_result else 0
+        
+        # Lấy hoạt động gần đây (5 records mới nhất)
+        recent_activities = db.query(DiseasePrediction).filter(
+            DiseasePrediction.user_id == current_user.id
+        ).order_by(desc(DiseasePrediction.created_at)).limit(5).all()
+        
+        # Format recent activities
+        formatted_activities = []
+        for activity in recent_activities:
+            confidence_percent = round(activity.confidence * 100, 1) if activity.confidence else 0
+            time_diff = datetime.utcnow() - activity.created_at if activity.created_at else timedelta(0)
+            
+            # Tính thời gian relative
+            if time_diff.days > 0:
+                time_ago = f"{time_diff.days} ngày trước"
+            elif time_diff.seconds > 3600:
+                hours = time_diff.seconds // 3600
+                time_ago = f"{hours} giờ trước"
+            elif time_diff.seconds > 60:
+                minutes = time_diff.seconds // 60
+                time_ago = f"{minutes} phút trước"
+            else:
+                time_ago = "Vừa xong"
+            
+            formatted_activities.append({
+                "id": activity.id,
+                "type": "analysis",
+                "disease": activity.disease_type or "Unknown",
+                "confidence": confidence_percent,
+                "time_ago": time_ago,
+                "icon": "🌱" if activity.disease_type == "nodisease" else "🔍",
+                "message": f"Phân tích hoàn thành - {activity.disease_type} ({confidence_percent}% độ tin cậy)"
+            })
+        
+        # Lấy thống kê loại bệnh
+        disease_stats = db.query(
+            DiseasePrediction.disease_type,
+            func.count(DiseasePrediction.id).label('count')
+        ).filter(
+            DiseasePrediction.user_id == current_user.id
+        ).group_by(DiseasePrediction.disease_type).all()
+        
+        disease_distribution = {}
+        for disease, count in disease_stats:
+            disease_key = disease or "unknown"
+            disease_distribution[disease_key] = count
+        
+        return {
+            "total_analysis": total_analysis,
+            "diseases_detected": diseases_detected,
+            "accuracy_rate": accuracy_rate,
+            "this_month_analysis": this_month_analysis,
+            "recent_activities": formatted_activities,
+            "disease_distribution": disease_distribution,
+            "healthy_plants": disease_distribution.get("nodisease", 0),
+            "success_rate": round((disease_distribution.get("nodisease", 0) / total_analysis * 100), 1) if total_analysis > 0 else 0,
+            # Thêm thống kê đơn hàng
+            "total_orders": total_orders,
+            "pending_orders": pending_orders,
+            "completed_orders": completed_orders,
+            "total_spent": total_spent
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving dashboard stats: {str(e)}")

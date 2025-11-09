@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../layout/Layout'
 import CouponService from '../../services/couponApi'
+import ShopService from '../../services/shopApi'
 import './CartPage.css'
 
 const CartPage = () => {
@@ -15,47 +16,46 @@ const CartPage = () => {
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [loadingCoupons, setLoadingCoupons] = useState(false)
 
+  // ===== CART SYNC FUNCTIONS =====
+  const syncCartFromDatabase = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'))
+      if (!user) {
+        setCartItems([])
+        setLoading(false)
+        return
+      }
+
+      // Lấy giỏ hàng từ database
+      const cartData = await ShopService.getCart()
+      
+      // Convert cart data từ database format sang frontend format
+      const cartItems = cartData.cart_items?.map(item => ({
+        id: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+        image: item.product.image_url,
+        description: item.product.description,
+        stock: item.product.stock,
+        quantity: item.quantity,
+        cart_item_id: item.id // Lưu ID của cart item để dùng cho update/delete
+      })) || []
+
+      setCartItems(cartItems)
+      
+    } catch (error) {
+      console.error('Lỗi khi đồng bộ giỏ hàng từ database:', error)
+      // Set empty cart if database sync fails
+      setCartItems([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Load cart data khi component mount
   useEffect(() => {
-    const loadCartData = () => {
-      try {
-        // Lấy dữ liệu từ localStorage hoặc sessionStorage
-        const savedCart = localStorage.getItem('marketplaceCart') || localStorage.getItem('checkoutCart')
-        if (savedCart) {
-          const parsedCart = JSON.parse(savedCart)
-          setCartItems(parsedCart)
-        } else {
-          // Nếu không có dữ liệu, có thể lấy từ API
-          setCartItems([])
-        }
-      } catch (error) {
-        console.error('Lỗi khi đọc dữ liệu giỏ hàng:', error)
-        setCartItems([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadCartData()
-
-    // Lắng nghe sự thay đổi localStorage để đồng bộ real-time
-    const handleStorageChange = (e) => {
-      if (e.key === 'marketplaceCart') {
-        try {
-          const newCartData = e.newValue ? JSON.parse(e.newValue) : []
-          setCartItems(newCartData)
-        } catch (error) {
-          console.error('Lỗi khi đồng bộ giỏ hàng:', error)
-        }
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    
-    // Cleanup listener khi component unmount
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-    }
+    // Chỉ đồng bộ từ database
+    syncCartFromDatabase()
   }, [])
 
   // Load available coupons when cart changes
@@ -192,54 +192,96 @@ const CartPage = () => {
     setAppliedCoupon(null)
     setCouponCode('')
     setCouponError('')
-    // Xóa coupon data khỏi localStorage
-    localStorage.removeItem('checkoutCoupon')
   }
 
-  const handleIncreaseQuantity = (itemId) => {
-    const newCartItems = cartItems.map(item => 
-      item.id === itemId 
-        ? { ...item, quantity: item.quantity + 1 }
-        : item
-    )
-    setCartItems(newCartItems)
-    // Cập nhật localStorage
-    updateLocalStorage(newCartItems)
-  }
+  const handleIncreaseQuantity = async (itemId) => {
+    try {
+      const currentItem = cartItems.find(item => item.id === itemId)
+      if (!currentItem) return
 
-  const handleDecreaseQuantity = (itemId) => {
-    const currentItem = cartItems.find(item => item.id === itemId)
-    
-    if (currentItem && currentItem.quantity === 1) {
-      // Hiện popup xác nhận khi số lượng về 0
-      const confirmRemove = window.confirm(`Bạn có muốn xóa "${currentItem.name}" khỏi giỏ hàng không?`)
-      
-      if (confirmRemove) {
-        // Xóa sản phẩm khỏi giỏ hàng
-        const newCartItems = cartItems.filter(item => item.id !== itemId)
-        setCartItems(newCartItems)
-        updateLocalStorage(newCartItems)
+      // Gọi API để cập nhật trong database
+      if (currentItem.cart_item_id) {
+        await ShopService.updateCartItem(currentItem.cart_item_id, currentItem.quantity + 1)
       }
-      // Nếu không xác nhận, không làm gì cả (giữ nguyên quantity = 1)
-    } else {
-      // Giảm số lượng bình thường
+
+      // Cập nhật local state
       const newCartItems = cartItems.map(item => 
         item.id === itemId 
-          ? { ...item, quantity: item.quantity - 1 }
+          ? { ...item, quantity: item.quantity + 1 }
           : item
       )
       setCartItems(newCartItems)
-      updateLocalStorage(newCartItems)
+      
+    } catch (error) {
+      console.error('Lỗi khi tăng số lượng:', error)
+      // Nếu API thất bại, vẫn cập nhật local state
+      const newCartItems = cartItems.map(item => 
+        item.id === itemId 
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+      setCartItems(newCartItems)
+    }
+  }
+
+  const handleDecreaseQuantity = async (itemId) => {
+    try {
+      const currentItem = cartItems.find(item => item.id === itemId)
+      if (!currentItem) return
+      
+      if (currentItem.quantity === 1) {
+        // Hiện popup xác nhận khi số lượng về 0
+        const confirmRemove = window.confirm(`Bạn có muốn xóa "${currentItem.name}" khỏi giỏ hàng không?`)
+        
+        if (confirmRemove) {
+          // Gọi API để xóa khỏi database
+          if (currentItem.cart_item_id) {
+            await ShopService.removeFromCart(currentItem.cart_item_id)
+          }
+
+          // Xóa sản phẩm khỏi giỏ hàng
+          const newCartItems = cartItems.filter(item => item.id !== itemId)
+          setCartItems(newCartItems)
+        }
+        // Nếu không xác nhận, không làm gì cả (giữ nguyên quantity = 1)
+      } else {
+        // Gọi API để cập nhật trong database
+        if (currentItem.cart_item_id) {
+          await ShopService.updateCartItem(currentItem.cart_item_id, currentItem.quantity - 1)
+        }
+
+        // Giảm số lượng bình thường
+        const newCartItems = cartItems.map(item => 
+          item.id === itemId 
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        )
+        setCartItems(newCartItems)
+      }
+    } catch (error) {
+      console.error('Lỗi khi giảm số lượng:', error)
+      // Nếu API thất bại, vẫn cập nhật local state như cũ
+      const currentItem = cartItems.find(item => item.id === itemId)
+      
+      if (currentItem && currentItem.quantity === 1) {
+        const confirmRemove = window.confirm(`Bạn có muốn xóa "${currentItem.name}" khỏi giỏ hàng không?`)
+        
+        if (confirmRemove) {
+          const newCartItems = cartItems.filter(item => item.id !== itemId)
+          setCartItems(newCartItems)
+        }
+      } else {
+        const newCartItems = cartItems.map(item => 
+          item.id === itemId 
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        )
+        setCartItems(newCartItems)
+      }
     }
   }
 
 
-
-  const updateLocalStorage = (newCartItems) => {
-    setTimeout(() => {
-      localStorage.setItem('marketplaceCart', JSON.stringify(newCartItems))
-    }, 100)
-  }
 
   const handleContinueShopping = () => {
     navigate('/marketplace')
@@ -251,25 +293,28 @@ const CartPage = () => {
       return
     }
     
-    // Lưu thông tin giỏ hàng và mã giảm giá vào localStorage để truyền sang trang checkout
-    const checkoutData = {
-      items: cartItems,
-      appliedCoupon: appliedCoupon
-    }
-    
-    localStorage.setItem('checkoutCart', JSON.stringify(cartItems))
-    localStorage.setItem('checkoutCoupon', JSON.stringify(appliedCoupon))
-    navigate('/checkout')
+    // Truyền dữ liệu qua navigation state thay vì localStorage
+    navigate('/checkout', {
+      state: {
+        cartItems: cartItems,
+        appliedCoupon: appliedCoupon
+      }
+    })
   }
 
-  const handleClearCart = () => {
+  const handleClearCart = async () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa tất cả sản phẩm khỏi giỏ hàng?')) {
+      try {
+        // Gọi API để xóa giỏ hàng khỏi database
+        await ShopService.clearCart()
+      } catch (error) {
+        console.error('Lỗi khi xóa giỏ hàng từ database:', error)
+      }
+
+      // Xóa local state
       setCartItems([])
       setAppliedCoupon(null)
       setCouponCode('')
-      localStorage.removeItem('marketplaceCart')
-      localStorage.removeItem('checkoutCart')
-      localStorage.removeItem('checkoutCoupon')
     }
   }
 
@@ -347,7 +392,7 @@ const CartPage = () => {
                   {/* Product Info */}
                   <div className="cart-item-info">
                     <h3 className="cart-item-name">{item.name}</h3>
-                    <p className="cart-item-price">${item.price}</p>
+                    <p className="cart-item-price">{item.price.toLocaleString('vi-VN')}₫</p>
                     <div className="cart-item-controls">
                       <div className="quantity-controls">
                         <button 
@@ -366,7 +411,7 @@ const CartPage = () => {
                         </button>
                       </div>
                       <div className="item-total">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        {(item.price * item.quantity).toLocaleString('vi-VN')}₫
                       </div>
                     </div>
                   </div>
@@ -466,22 +511,22 @@ const CartPage = () => {
 
               <div className="summary-details">
                 <div className="summary-row">
-                  <span>Tạm tính ({selectedItems.size} sản phẩm):</span>
-                  <span>${getSelectedItemsTotal().toFixed(2)}</span>
+                  <span>Subtotal ({selectedItems.size} items):</span>
+                  <span>{getSelectedItemsTotal().toLocaleString('vi-VN')}₫</span>
                 </div>
                 {appliedCoupon && (
                   <div className="summary-row discount-row">
-                    <span>Giảm giá ({appliedCoupon.code}):</span>
-                    <span className="discount-amount">-${getSelectedItemsDiscount().toFixed(2)}</span>
+                    <span>Discount ({appliedCoupon.code}):</span>
+                    <span className="discount-amount">-{getSelectedItemsDiscount().toLocaleString('vi-VN')}₫</span>
                   </div>
                 )}
                 <div className="summary-row">
-                  <span>Phí vận chuyển:</span>
-                  <span className="free-shipping">Miễn phí</span>
+                  <span>Shipping:</span>
+                  <span className="free-shipping">Free</span>
                 </div>
                 <div className="summary-row total-row">
-                  <span>Tổng cộng:</span>
-                  <span className="total-price">${getSelectedItemsFinalPrice().toFixed(2)}</span>
+                  <span>Total:</span>
+                  <span className="total-price">{getSelectedItemsFinalPrice().toLocaleString('vi-VN')}₫</span>
                 </div>
               </div>
 

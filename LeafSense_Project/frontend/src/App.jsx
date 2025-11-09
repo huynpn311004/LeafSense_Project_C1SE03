@@ -23,6 +23,7 @@ import AdminProducts from './components/pages/admin/AdminProducts'
 import AdminOrders from './components/pages/admin/AdminOrders'
 import AdminCategories from './components/pages/admin/AdminCategories'
 import AdminCoupons from './components/pages/admin/AdminCoupons'
+import AdminCommunity from './components/pages/admin/AdminCommunity'
 import AdminSettings from './components/pages/admin/AdminSettings'
 import AdminAuthGuard from './components/AdminAuthGuard'
 import './App.css'
@@ -70,6 +71,11 @@ function App() {
           <Route path="/admin/coupons" element={
             <AdminAuthGuard>
               <AdminCoupons />
+            </AdminAuthGuard>
+          } />
+          <Route path="/admin/community" element={
+            <AdminAuthGuard>
+              <AdminCommunity />
             </AdminAuthGuard>
           } />
           <Route path="/admin/settings" element={

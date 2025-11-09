@@ -163,8 +163,32 @@ const Layout = ({ children }) => {
   };
 
   const handleLogout = () => {
+    // Get user ID before clearing user data
+    const userStr = localStorage.getItem('user');
+    let userId = null;
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        userId = user?.id;
+      } catch (error) {
+        console.error('Error parsing user data on logout:', error);
+      }
+    }
+    
+    // Clear user-specific cart if user ID exists
+    if (userId) {
+      localStorage.removeItem(`marketplaceCart_${userId}`);
+    }
+    
+    // Clear guest cart
+    localStorage.removeItem('marketplaceCart_guest');
+    
+    // Clear general data
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('checkoutCart');
+    localStorage.removeItem('checkoutCoupon');
+    
     navigate('/login');
   };
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import Layout from '../layout/Layout'
 import CouponService from '../../services/couponApi'
 import ShopService from '../../services/shopApi'
@@ -7,6 +7,8 @@ import './CheckoutPage.css'
 
 const CheckoutPage = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  
   const [orderData, setOrderData] = useState({
     fullName: '',
     address: '',
@@ -15,7 +17,7 @@ const CheckoutPage = () => {
     note: ''
   })
 
-  // Lấy dữ liệu giỏ hàng từ localStorage
+  // Lấy dữ liệu giỏ hàng từ navigation state hoặc database
   const [cartItems, setCartItems] = useState([])
   
   // State cho mã giảm giá
@@ -27,66 +29,56 @@ const CheckoutPage = () => {
     error: '',
     loading: false
   })
-  
-
 
   // Load cart data khi component mount
-  React.useEffect(() => {
-    let cartData = null
-    
-    try {
-      // Ưu tiên lấy từ checkoutCart (từ CartPage)
-      const checkoutCart = localStorage.getItem('checkoutCart')
-      if (checkoutCart) {
-        cartData = JSON.parse(checkoutCart)
-        console.log('Đã tải dữ liệu từ checkoutCart:', cartData)
-      } else {
-        // Backup: lấy từ marketplaceCart (trực tiếp từ marketplace)
-        const marketplaceCart = localStorage.getItem('marketplaceCart')
-        if (marketplaceCart) {
-          cartData = JSON.parse(marketplaceCart)
-          console.log('Đã tải dữ liệu từ marketplaceCart:', cartData)
-          // Lưu vào checkoutCart để đồng nhất
-          localStorage.setItem('checkoutCart', marketplaceCart)
-        }
-      }
+  useEffect(() => {
+    // Lấy dữ liệu từ navigation state (từ CartPage)
+    if (location.state?.cartItems) {
+      setCartItems(location.state.cartItems)
+      console.log('Đã tải dữ liệu từ navigation state:', location.state.cartItems)
       
-      // Load coupon data từ CartPage
-      const savedCoupon = localStorage.getItem('checkoutCoupon')
-      if (savedCoupon) {
-        try {
-          const parsedCoupon = JSON.parse(savedCoupon)
-          if (parsedCoupon) {
-            setCouponData({
-              code: parsedCoupon.coupon?.code || '',
-              discount: parsedCoupon.discount_amount || 0,
-              isValid: true,
-              isApplied: true,
-              error: '',
-              loading: false
-            })
-            console.log('Đã tải mã giảm giá từ CartPage:', parsedCoupon)
-          }
-        } catch (error) {
-          console.error('Lỗi khi đọc dữ liệu coupon:', error)
-        }
+      // Nếu có applied coupon thì set luôn
+      if (location.state.appliedCoupon) {
+        setCouponData({
+          ...couponData,
+          code: location.state.appliedCoupon.code,
+          discount: location.state.appliedCoupon.discount_percentage,
+          isValid: true,
+          isApplied: true
+        })
       }
-      
-      if (cartData && Array.isArray(cartData) && cartData.length > 0) {
-        setCartItems(cartData)
-        console.log('Đã set cart items:', cartData)
-      } else {
-        // Không có dữ liệu hợp lệ, redirect về marketplace
-        console.warn('Không có sản phẩm nào trong giỏ hàng!')
-        alert('Không có sản phẩm nào trong giỏ hàng!')
-        navigate('/marketplace')
-      }
-    } catch (error) {
-      console.error('Lỗi khi đọc dữ liệu giỏ hàng:', error)
-      alert('Có lỗi xảy ra khi tải dữ liệu giỏ hàng!')
-      navigate('/marketplace')
+    } else {
+      // Fallback: lấy từ database nếu không có navigation state
+      loadCartFromDatabase()
     }
-  }, [navigate])
+  }, [])
+
+  const loadCartFromDatabase = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'))
+      if (!user) {
+        navigate('/cart') // Redirect về cart nếu chưa login
+        return
+      }
+
+      const cartData = await ShopService.getCart()
+      const cartItems = cartData.cart_items?.map(item => ({
+        id: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+        image: item.product.image_url,
+        description: item.product.description,
+        stock: item.product.stock,
+        quantity: item.quantity,
+        cart_item_id: item.id
+      })) || []
+
+      setCartItems(cartItems)
+    } catch (error) {
+      console.error('Lỗi khi lấy giỏ hàng từ database:', error)
+      navigate('/cart') // Redirect về cart nếu có lỗi
+    }
+  }
 
   // Load danh sách mã giảm giá có sẵn
   const loadAvailableCoupons = async () => {
@@ -258,11 +250,7 @@ const CheckoutPage = () => {
       const createdOrder = await ShopService.createOrder(orderApiData)
       console.log('Order created successfully:', createdOrder)
       
-      // Xóa dữ liệu giỏ hàng và coupon sau khi đặt hàng thành công
-      localStorage.removeItem('checkoutCart')
-      localStorage.removeItem('checkoutCoupon')
-      localStorage.removeItem('marketplaceCart')
-      
+      // Chỉ cần alert thành công, giỏ hàng đã được clear từ database
       alert('Đặt hàng thành công!')
       navigate('/orders')
     } catch (error) {

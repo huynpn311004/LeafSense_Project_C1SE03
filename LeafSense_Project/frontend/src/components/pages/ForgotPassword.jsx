@@ -12,10 +12,10 @@ const ForgotPassword = () => {
 
   const emailError = useMemo(() => {
     if (!touched) return '';
-    if (!email) return 'Vui lòng nhập email.';
+    if (!email) return 'Please enter your email.';
     // Simple RFC 5322-ish email check
     const emailRegex = /^(?:[a-zA-Z0-9_'^&/+-])+(?:\.(?:[a-zA-Z0-9_'^&/+-])+)*@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
-    return emailRegex.test(email) ? '' : 'Email không hợp lệ.';
+    return emailRegex.test(email) ? '' : 'Invalid email address.';
   }, [email, touched]);
 
   const handleSubmit = async (e) => {
@@ -39,10 +39,10 @@ const ForgotPassword = () => {
       );
 
       setIsEmailSent(true);
-      toast.success('Email đặt lại mật khẩu đã được gửi nếu địa chỉ email tồn tại.');
+      toast.success('Password reset email has been sent if the email address exists.');
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
+      toast.error('An error occurred. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +53,7 @@ const ForgotPassword = () => {
       <div className="auth-card">
         <div>
           <h2 className="auth-title">
-            Quên Mật Khẩu
+            Forgot Password
           </h2>
         </div>
         {!isEmailSent ? (
@@ -70,7 +70,7 @@ const ForgotPassword = () => {
                   autoComplete="email"
                   required
                   className={`input ${emailError ? 'input-error' : ''}`}
-                  placeholder="Nhập địa chỉ email"
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={() => setTouched(true)}
@@ -84,23 +84,23 @@ const ForgotPassword = () => {
               disabled={isLoading || !!emailError}
               className="btn btn-primary btn-block"
             >
-              {isLoading ? 'Đang gửi...' : 'Gửi Email Đặt Lại Mật Khẩu'}
+              {isLoading ? 'Sending...' : 'Send Password Reset Email'}
             </button>
           </form>
         ) : (
           <div className="success-panel">
             <div className="success-icon" aria-hidden="true">✓</div>
             <h3 className="success-title">
-              Email Đã Được Gửi!
+              Email Sent!
             </h3>
             <p className="success-text">
-              Vui lòng kiểm tra hộp thư của bạn và làm theo hướng dẫn để đặt lại mật khẩu.
+              Please check your inbox and follow the instructions to reset your password.
             </p>
             <Link
               to="/login"
               className="auth-link"
             >
-              ← Quay lại trang đăng nhập
+              ← Back to login page
             </Link>
           </div>
         )}
