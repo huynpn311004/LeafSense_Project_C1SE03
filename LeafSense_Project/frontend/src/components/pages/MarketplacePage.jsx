@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../layout/Layout'
-import ShopService from '../../services/shopApi'
 import './MarketplacePage.css'
 
 const MarketplacePage = () => {
@@ -33,43 +32,42 @@ const MarketplacePage = () => {
     }, 50)
   }
 
-  // ===== CART SYNC FUNCTIONS =====
-  const syncCartFromDatabase = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'))
-      if (!user) {
-        setCart([])
-        return
-      }
-
-      // Lấy giỏ hàng từ database
-      const cartData = await ShopService.getCart()
-      
-      // Convert cart data từ database format sang frontend format
-      const cartItems = cartData.cart_items?.map(item => ({
-        id: item.product.id,
-        name: item.product.name,
-        price: item.product.price,
-        image: item.product.image_url,
-        description: item.product.description,
-        stock: item.product.stock,
-        quantity: item.quantity
-      })) || []
-
-      // Chỉ cập nhật state, không dùng localStorage
-      setCart(cartItems)
-      
-    } catch (error) {
-      console.error('Lỗi khi đồng bộ giỏ hàng từ database:', error)
-      setCart([])
-    }
-  }
-
+  // ===== SYNC CART FROM LOCALSTORAGE =====
   useEffect(() => {
-    // Chỉ đồng bộ từ database
-    syncCartFromDatabase()
-  }, [])
+    const syncCartFromStorage = () => {
+      try {
+        const savedCart = localStorage.getItem('marketplaceCart')
+        if (savedCart) {
+          const parsedCart = JSON.parse(savedCart)
+          setCart(parsedCart)
+        }
+      } catch (error) {
+        console.error('Lỗi khi đồng bộ giỏ hàng từ localStorage:', error)
+      }
+    }
 
+    // Đồng bộ khi component mount
+    syncCartFromStorage()
+
+    // Lắng nghe sự thay đổi localStorage
+    const handleStorageChange = (e) => {
+      if (e.key === 'marketplaceCart') {
+        try {
+          const newCartData = e.newValue ? JSON.parse(e.newValue) : []
+          setCart(newCartData)
+        } catch (error) {
+          console.error('Lỗi khi đồng bộ giỏ hàng:', error)
+        }
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [])
+  
   // Fetch categories from backend
   const fetchCategories = async () => {
     try {
@@ -127,7 +125,7 @@ const MarketplacePage = () => {
   }
 
   // ===== CART FUNCTIONS =====
-  const addToCart = async (product) => {
+  const addToCart = (product) => {
     try {
       const user = JSON.parse(localStorage.getItem('user'))
       if (!user) {
@@ -135,13 +133,30 @@ const MarketplacePage = () => {
         return
       }
 
-      // Gọi API để thêm vào database
-      await ShopService.addToCart(product.id, 1)
+      // Get current cart from localStorage to ensure latest state
+      const currentCart = JSON.parse(localStorage.getItem('marketplaceCart') || '[]')
       
-      // Đồng bộ lại giỏ hàng từ database
-      await syncCartFromDatabase()
+      // Check if item already exists in current cart
+      const existingItemIndex = currentCart.findIndex(item => item.id === product.id)
       
-      showNotification(`${product.name} đã được thêm vào giỏ hàng!`, 'success')
+      let updatedCart
+      if (existingItemIndex !== -1) {
+        // Update existing item quantity
+        updatedCart = [...currentCart]
+        updatedCart[existingItemIndex] = {
+          ...updatedCart[existingItemIndex],
+          quantity: updatedCart[existingItemIndex].quantity + 1
+        }
+        showNotification(`Đã tăng số lượng ${product.name} trong giỏ hàng!`, 'success')
+      } else {
+        // Add new item to cart
+        updatedCart = [...currentCart, { ...product, quantity: 1 }]
+        showNotification(`${product.name} đã được thêm vào giỏ hàng!`, 'success')
+      }
+      
+      // Update state and localStorage simultaneously
+      setCart(updatedCart)
+      localStorage.setItem('marketplaceCart', JSON.stringify(updatedCart))
       
     } catch (error) {
       console.error('Error adding to cart:', error)
@@ -201,11 +216,16 @@ const MarketplacePage = () => {
 
         {/* HEADER */}
         <div className="marketplace-header">
+          <h1>Marketplace</h1>
           <div className="header-actions">
             <div 
               className={`cart-icon ${cart.length > 0 ? 'has-items' : ''}`}
-              onClick={() => navigate('/cart')}
-              title={`Cart: ${cart.length} items - Total: ${getTotalPrice().toLocaleString('vi-VN')}₫`}
+              onClick={() => {
+                // Lưu giỏ hàng hiện tại vào localStorage trước khi chuyển trang
+                localStorage.setItem('marketplaceCart', JSON.stringify(cart))
+                navigate('/cart')
+              }}
+              title={`Giỏ hàng: ${cart.length} sản phẩm - Tổng: $${getTotalPrice().toFixed(2)}`}
             >
               <span className="cart-count">{cart.length}</span>
               🛒
@@ -266,7 +286,7 @@ const MarketplacePage = () => {
                   <div className="product-info">
                     <h3 className="product-name">{product.name}</h3>
                     <p className="product-description">{product.description}</p>
-                    <div className="product-price">{product.price.toLocaleString('vi-VN')}₫</div>
+                    <div className="product-price">${product.price}</div>
                     
                     {/* Show stock information */}
                     <div className="product-stock">

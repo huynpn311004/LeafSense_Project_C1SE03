@@ -32,10 +32,10 @@ const AdminCoupons = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    loadCoupons()
+    fetchCoupons()
   }, [searchTerm, statusFilter])
 
-  const loadCoupons = async () => {
+  const fetchCoupons = async () => {
     try {
       const result = await CouponService.getAllCouponsAdmin(0, 100, statusFilter)
       
@@ -49,35 +49,36 @@ const AdminCoupons = () => {
         }
         setCoupons(filteredCoupons)
       } else {
-        toast.error('Could not load coupon list')
-        if (result.error && result.error.includes('login')) {
+        toast.error(result.error || 'Lỗi khi tải danh sách mã giảm giá')
+        if (result.error.includes('đăng nhập')) {
           localStorage.removeItem('token')
           localStorage.removeItem('user')
           navigate('/login')
         }
       }
     } catch (error) {
-      console.error('Error loading coupons:', error)
-      toast.error('Error loading coupon list')
+      console.error('Error fetching coupons:', error)
+      toast.error('Lỗi khi tải danh sách mã giảm giá')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  const getStats = async () => {
+  const fetchStats = async () => {
     try {
       const result = await CouponService.getCouponStatsAdmin()
       if (result.success) {
         setStats(result.data)
       } else {
-        toast.error('Could not load statistics')
+        toast.error(result.error || 'Không thể tải thống kê')
       }
     } catch (error) {
-      console.error('Statistics error:', error)
-      toast.error('Could not load statistics')
+      console.error('Error fetching stats:', error)
+      toast.error('Không thể tải thống kê')
     }
   }
 
-  const addCoupon = async (e) => {
+  const handleAddCoupon = async (e) => {
     e.preventDefault()
     try {
       const couponData = {
@@ -94,20 +95,20 @@ const AdminCoupons = () => {
       const result = await CouponService.createCouponAdmin(couponData)
       
       if (result.success) {
-        toast.success('Coupon added successfully!')
+        toast.success('Thêm mã giảm giá thành công')
         setShowAddModal(false)
         resetForm()
-        loadCoupons()
+        fetchCoupons()
       } else {
-        toast.error('Failed to add coupon')
+        toast.error(result.error || 'Thêm mã giảm giá thất bại')
       }
     } catch (error) {
       console.error('Error adding coupon:', error)
-      toast.error('Failed to add coupon')
+      toast.error('Thêm mã giảm giá thất bại')
     }
   }
 
-  const updateCoupon = async (e) => {
+  const handleEditCoupon = async (e) => {
     e.preventDefault()
     try {
       const couponData = {
@@ -128,39 +129,39 @@ const AdminCoupons = () => {
       const result = await CouponService.updateCouponAdmin(editingCoupon.id, couponData)
       
       if (result.success) {
-        toast.success('Updated successfully!')
+        toast.success('Cập nhật mã giảm giá thành công')
         setShowEditModal(false)
         setEditingCoupon(null)
         resetForm()
-        loadCoupons()
+        fetchCoupons()
       } else {
-        toast.error('Update failed')
+        toast.error(result.error || 'Cập nhật mã giảm giá thất bại')
       }
     } catch (error) {
-      console.error('Update error:', error)
-      toast.error('Update failed')
+      console.error('Error updating coupon:', error)
+      toast.error('Cập nhật mã giảm giá thất bại')
     }
   }
 
-  const deleteCoupon = async (couponId, couponCode) => {
-    if (window.confirm(`Delete coupon "${couponCode}"?`)) {
+  const handleDeleteCoupon = async (couponId, couponCode) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa mã giảm giá "${couponCode}"?`)) {
       try {
         const result = await CouponService.deleteCouponAdmin(couponId)
         
         if (result.success) {
-          toast.success('Coupon deleted')
-          loadCoupons()
+          toast.success('Xóa mã giảm giá thành công')
+          fetchCoupons()
         } else {
-          toast.error('Delete failed')
+          toast.error(result.error || 'Xóa mã giảm giá thất bại')
         }
       } catch (error) {
-        console.error('Delete error:', error)
-        toast.error('Delete failed')
+        console.error('Error deleting coupon:', error)
+        toast.error('Xóa mã giảm giá thất bại')
       }
     }
   }
 
-  const editCoupon = (coupon) => {
+  const openEditModal = (coupon) => {
     setEditingCoupon(coupon)
     setFormData({
       code: coupon.code,
@@ -180,8 +181,8 @@ const AdminCoupons = () => {
     setShowEditModal(true)
   }
 
-  const showStats = async () => {
-    await getStats()
+  const openStatsModal = async () => {
+    await fetchStats()
     setShowStatsModal(true)
   }
 
@@ -207,52 +208,57 @@ const AdminCoupons = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
+    toast.success('Đã đăng xuất')
   }
 
-  const formatMoney = (amount) => {
+  const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
     }).format(amount)
   }
 
-  const formatDateTime = (dateString) => {
+  const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('vi-VN')
   }
 
-  const getCouponType = (type) => {
+  const getCouponTypeText = (type) => {
     switch (type) {
-      case 'percentage': return 'Percentage'
-      case 'fixed': return 'Fixed Amount'
-      case 'free_shipping': return 'Free Shipping'
-      default: return type
+      case 'percentage':
+        return 'Phần trăm'
+      case 'fixed':
+        return 'Số tiền cố định'
+      case 'free_shipping':
+        return 'Miễn phí vận chuyển'
+      default:
+        return type
     }
   }
 
-  const getStatusColor = (coupon) => {
+  const getCouponStatusColor = (coupon) => {
     const now = new Date()
     const endDate = new Date(coupon.end_date)
     
-    if (!coupon.is_active || coupon.status === 'inactive') return '#dc3545'
-    if (now > endDate || coupon.status === 'expired') return '#ffc107'
-    return '#28a745'
+    if (!coupon.is_active || coupon.status === 'inactive') return '#f44336'
+    if (now > endDate || coupon.status === 'expired') return '#ff9800'
+    return '#4caf50'
   }
 
-  const getStatusText = (coupon) => {
+  const getCouponStatusText = (coupon) => {
     const now = new Date()
     const startDate = new Date(coupon.start_date)
     const endDate = new Date(coupon.end_date)
     
-    if (!coupon.is_active || coupon.status === 'inactive') return 'Inactive'
-    if (now > endDate || coupon.status === 'expired') return 'Expired'
-    if (now < startDate) return 'Not Started'
-    return 'Active'
+    if (!coupon.is_active || coupon.status === 'inactive') return 'Không hoạt động'
+    if (now > endDate || coupon.status === 'expired') return 'Đã hết hạn'
+    if (now < startDate) return 'Chưa bắt đầu'
+    return 'Đang hoạt động'
   }
 
   if (loading) {
     return (
       <div className="admin-coupons">
-        <div className="loading">Loading data...</div>
+        <div className="loading">Đang tải...</div>
       </div>
     )
   }
@@ -261,12 +267,12 @@ const AdminCoupons = () => {
     <div className="admin-coupons">
       <div className="admin-header">
         <div className="admin-header-left">
-          <h1>Coupon Management</h1>
-          <p>Manage coupons and promotions</p>
+          <h1>Quản lý Mã giảm giá</h1>
+          <p>Quản lý các mã giảm giá và ưu đãi</p>
         </div>
         <div className="admin-header-right">
           <button onClick={handleLogout} className="logout-btn">
-            Logout
+            Đăng xuất
           </button>
         </div>
       </div>
@@ -282,43 +288,31 @@ const AdminCoupons = () => {
           className="nav-btn"
           onClick={() => navigate('/admin/users')}
         >
-          User Management
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/categories')}
-        >
-          Category Management
+          Quản lý Users
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/products')}
         >
-          Product Management
+          Quản lý Sản phẩm
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/orders')}
         >
-          Order Management
+          Quản lý Đơn hàng
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/categories')}
+        >
+          Quản lý Danh mục
         </button>
         <button 
           className="nav-btn active"
           onClick={() => navigate('/admin/coupons')}
         >
-          Coupon Management
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/community')}
-        >
-          Community Management
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/settings')}
-        >
-          Settings
+          Quản lý Mã giảm giá
         </button>
       </div>
 
@@ -326,7 +320,7 @@ const AdminCoupons = () => {
         <div className="search-box">
           <input
             type="text"
-            placeholder="Search coupons..."
+            placeholder="Tìm kiếm mã giảm giá..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -336,23 +330,23 @@ const AdminCoupons = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="expired">Expired</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang hoạt động</option>
+            <option value="inactive">Không hoạt động</option>
+            <option value="expired">Đã hết hạn</option>
           </select>
         </div>
         <button 
           className="stats-btn"
-          onClick={showStats}
+          onClick={openStatsModal}
         >
-          Statistics
+          Thống kê
         </button>
         <button 
           className="add-btn"
           onClick={() => setShowAddModal(true)}
         >
-          Add Coupon
+          Thêm mã giảm giá
         </button>
       </div>
 
@@ -363,9 +357,9 @@ const AdminCoupons = () => {
               <div className="coupon-code">{coupon.code}</div>
               <div 
                 className="coupon-status"
-                style={{ backgroundColor: getStatusColor(coupon) }}
+                style={{ backgroundColor: getCouponStatusColor(coupon) }}
               >
-                {getStatusText(coupon)}
+                {getCouponStatusText(coupon)}
               </div>
             </div>
             <div className="coupon-info">
@@ -374,53 +368,53 @@ const AdminCoupons = () => {
               
               <div className="coupon-details">
                 <div className="detail-row">
-                  <span className="label">Type:</span>
-                  <span className="value">{getCouponType(coupon.coupon_type)}</span>
+                  <span className="label">Loại:</span>
+                  <span className="value">{getCouponTypeText(coupon.coupon_type)}</span>
                 </div>
                 <div className="detail-row">
-                  <span className="label">Value:</span>
+                  <span className="label">Giá trị:</span>
                   <span className="value">
                     {coupon.coupon_type === 'percentage' 
                       ? `${coupon.value}%` 
-                      : formatMoney(coupon.value)
+                      : formatCurrency(coupon.value)
                     }
                   </span>
                 </div>
                 <div className="detail-row">
-                  <span className="label">Min Order:</span>
-                  <span className="value">{formatMoney(coupon.minimum_order_amount)}</span>
+                  <span className="label">Đơn tối thiểu:</span>
+                  <span className="value">{formatCurrency(coupon.minimum_order_amount)}</span>
                 </div>
                 {coupon.maximum_discount_amount && (
                   <div className="detail-row">
-                    <span className="label">Max Discount:</span>
-                    <span className="value">{formatMoney(coupon.maximum_discount_amount)}</span>
+                    <span className="label">Giảm tối đa:</span>
+                    <span className="value">{formatCurrency(coupon.maximum_discount_amount)}</span>
                   </div>
                 )}
                 <div className="detail-row">
-                  <span className="label">Used:</span>
+                  <span className="label">Đã sử dụng:</span>
                   <span className="value">
                     {coupon.current_usage_count}
                     {coupon.total_usage_limit ? `/${coupon.total_usage_limit}` : ''}
                   </span>
                 </div>
                 <div className="detail-row">
-                  <span className="label">Expires:</span>
-                  <span className="value">{formatDateTime(coupon.end_date)}</span>
+                  <span className="label">Thời hạn:</span>
+                  <span className="value">{formatDate(coupon.end_date)}</span>
                 </div>
               </div>
               
               <div className="coupon-actions">
                 <button 
                   className="edit-btn"
-                  onClick={() => editCoupon(coupon)}
+                  onClick={() => openEditModal(coupon)}
                 >
-                  Edit
+                  Sửa
                 </button>
                 <button 
                   className="delete-btn"
-                  onClick={() => deleteCoupon(coupon.id, coupon.code)}
+                  onClick={() => handleDeleteCoupon(coupon.id, coupon.code)}
                 >
-                  Delete
+                  Xóa
                 </button>
               </div>
             </div>
@@ -429,32 +423,33 @@ const AdminCoupons = () => {
         
         {coupons.length === 0 && (
           <div className="no-data">
-            <p>No coupons available yet</p>
+            <p>Không có mã giảm giá nào</p>
           </div>
         )}
       </div>
 
+      {/* Add Coupon Modal */}
       {showAddModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Add Coupon</h2>
+              <h2>Thêm mã giảm giá mới</h2>
               <button onClick={() => setShowAddModal(false)}>×</button>
             </div>
-            <form onSubmit={addCoupon} className="modal-form">
+            <form onSubmit={handleAddCoupon} className="modal-form">
               <div className="form-row">
                 <div className="form-group">
-                  <label>Coupon Code *</label>
+                  <label>Mã giảm giá *</label>
                   <input
                     type="text"
                     value={formData.code}
                     onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
-                    placeholder="Example: SUMMER2024"
+                    placeholder="VD: SUMMER2024"
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Coupon Name *</label>
+                  <label>Tên mã giảm giá *</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -465,30 +460,30 @@ const AdminCoupons = () => {
               </div>
               
               <div className="form-group">
-                <label>Description</label>
+                <label>Mô tả</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Description about coupon..."
+                  placeholder="Mô tả về mã giảm giá..."
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Discount Type *</label>
+                  <label>Loại giảm giá *</label>
                   <select
                     value={formData.coupon_type}
                     onChange={(e) => setFormData({...formData, coupon_type: e.target.value})}
                     required
                   >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount</option>
-                    <option value="free_shipping">Free Shipping</option>
+                    <option value="percentage">Phần trăm (%)</option>
+                    <option value="fixed">Số tiền cố định</option>
+                    <option value="free_shipping">Miễn phí vận chuyển</option>
                   </select>
                 </div>
                 <div className="form-group">
                   <label>
-                    Value *
+                    Giá trị *
                     {formData.coupon_type === 'percentage' && ' (%)'}
                     {formData.coupon_type === 'fixed' && ' (VND)'}
                   </label>
@@ -505,7 +500,7 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Minimum Order Amount (VND)</label>
+                  <label>Đơn hàng tối thiểu (VND)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -528,16 +523,16 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Total Usage Limit</label>
+                  <label>Tổng số lần sử dụng</label>
                   <input
                     type="number"
                     value={formData.total_usage_limit}
                     onChange={(e) => setFormData({...formData, total_usage_limit: e.target.value})}
-                    placeholder="Leave blank = unlimited"
+                    placeholder="Để trống = không giới hạn"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Uses per Customer *</label>
+                  <label>Số lần/khách hàng *</label>
                   <input
                     type="number"
                     value={formData.usage_limit_per_customer}
@@ -550,7 +545,7 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Start Date *</label>
+                  <label>Ngày bắt đầu *</label>
                   <input
                     type="datetime-local"
                     value={formData.start_date}
@@ -559,7 +554,7 @@ const AdminCoupons = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>End Date *</label>
+                  <label>Ngày kết thúc *</label>
                   <input
                     type="datetime-local"
                     value={formData.end_date}
@@ -571,23 +566,24 @@ const AdminCoupons = () => {
 
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowAddModal(false)}>
-                  Cancel
+                  Hủy
                 </button>
-                <button type="submit">Add</button>
+                <button type="submit">Thêm</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* Edit Coupon Modal */}
       {showEditModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Edit Coupon</h2>
+              <h2>Sửa mã giảm giá</h2>
               <button onClick={() => setShowEditModal(false)}>×</button>
             </div>
-            <form onSubmit={updateCoupon} className="modal-form">
+            <form onSubmit={handleEditCoupon} className="modal-form">
               <div className="form-group">
                 <label>Mã giảm giá</label>
                 <input
@@ -596,11 +592,11 @@ const AdminCoupons = () => {
                   disabled
                   style={{ backgroundColor: '#f5f5f5' }}
                 />
-                <small>Code cannot be changed</small>
+                <small>Mã giảm giá không thể thay đổi</small>
               </div>
 
               <div className="form-group">
-                <label>Coupon Name *</label>
+                <label>Tên mã giảm giá *</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -610,7 +606,7 @@ const AdminCoupons = () => {
               </div>
               
               <div className="form-group">
-                <label>Description</label>
+                <label>Mô tả</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -619,20 +615,20 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Discount Type *</label>
+                  <label>Loại giảm giá *</label>
                   <select
                     value={formData.coupon_type}
                     onChange={(e) => setFormData({...formData, coupon_type: e.target.value})}
                     required
                   >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount</option>
-                    <option value="free_shipping">Free Shipping</option>
+                    <option value="percentage">Phần trăm (%)</option>
+                    <option value="fixed">Số tiền cố định</option>
+                    <option value="free_shipping">Miễn phí vận chuyển</option>
                   </select>
                 </div>
                 <div className="form-group">
                   <label>
-                    Value *
+                    Giá trị *
                     {formData.coupon_type === 'percentage' && ' (%)'}
                     {formData.coupon_type === 'fixed' && ' (VND)'}
                   </label>
@@ -649,7 +645,7 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Minimum Order Amount (VND)</label>
+                  <label>Đơn hàng tối thiểu (VND)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -659,7 +655,7 @@ const AdminCoupons = () => {
                 </div>
                 {formData.coupon_type === 'percentage' && (
                   <div className="form-group">
-                    <label>Maximum Discount (VND)</label>
+                    <label>Giảm tối đa (VND)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -672,16 +668,16 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Total Usage Limit</label>
+                  <label>Tổng số lần sử dụng</label>
                   <input
                     type="number"
                     value={formData.total_usage_limit}
                     onChange={(e) => setFormData({...formData, total_usage_limit: e.target.value})}
-                    placeholder="Leave blank = unlimited"
+                    placeholder="Để trống = không giới hạn"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Uses per Customer *</label>
+                  <label>Số lần/khách hàng *</label>
                   <input
                     type="number"
                     value={formData.usage_limit_per_customer}
@@ -694,7 +690,7 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Start Date *</label>
+                  <label>Ngày bắt đầu *</label>
                   <input
                     type="datetime-local"
                     value={formData.start_date}
@@ -703,7 +699,7 @@ const AdminCoupons = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>End Date *</label>
+                  <label>Ngày kết thúc *</label>
                   <input
                     type="datetime-local"
                     value={formData.end_date}
@@ -715,13 +711,13 @@ const AdminCoupons = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Status</label>
+                  <label>Trạng thái</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({...formData, status: e.target.value})}
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">Hoạt động</option>
+                    <option value="inactive">Không hoạt động</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -731,16 +727,16 @@ const AdminCoupons = () => {
                       checked={formData.is_active}
                       onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
                     />
-                    Enable
+                    Kích hoạt
                   </label>
                 </div>
               </div>
 
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowEditModal(false)}>
-                  Cancel
+                  Hủy
                 </button>
-                <button type="submit">Update</button>
+                <button type="submit">Cập nhật</button>
               </div>
             </form>
           </div>
@@ -752,7 +748,7 @@ const AdminCoupons = () => {
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Coupon Statistics</h2>
+              <h2>Thống kê mã giảm giá</h2>
               <button onClick={() => setShowStatsModal(false)}>×</button>
             </div>
             <div className="stats-content">
@@ -760,37 +756,37 @@ const AdminCoupons = () => {
                 <>
                   <div className="stats-grid">
                     <div className="stat-card">
-                      <h3>Total Coupons</h3>
+                      <h3>Tổng mã giảm giá</h3>
                       <p className="stat-number">{stats.total_coupons}</p>
                     </div>
                     <div className="stat-card">
-                      <h3>Active</h3>
+                      <h3>Đang hoạt động</h3>
                       <p className="stat-number">{stats.active_coupons}</p>
                     </div>
                     <div className="stat-card">
-                      <h3>Total Usage</h3>
+                      <h3>Tổng lượt sử dụng</h3>
                       <p className="stat-number">{stats.total_usage}</p>
                     </div>
                     <div className="stat-card">
-                      <h3>Total Discount</h3>
-                      <p className="stat-number">{formatMoney(stats.total_discount_given)}</p>
+                      <h3>Tổng giảm giá</h3>
+                      <p className="stat-number">{formatCurrency(stats.total_discount_given)}</p>
                     </div>
                     <div className="stat-card">
-                      <h3>Recent Usage (30 days)</h3>
+                      <h3>Sử dụng gần đây (30 ngày)</h3>
                       <p className="stat-number">{stats.recent_usage}</p>
                     </div>
                   </div>
                   
                   {stats.top_coupons?.length > 0 && (
                     <div className="top-coupons">
-                      <h3>Top 5 Most Used Coupons</h3>
+                      <h3>Top 5 mã được sử dụng nhiều nhất</h3>
                       <div className="top-coupons-list">
                         {stats.top_coupons.map((coupon, index) => (
                           <div key={coupon.id} className="top-coupon-item">
                             <span className="rank">#{index + 1}</span>
                             <span className="coupon-code">{coupon.code}</span>
                             <span className="coupon-name">{coupon.name}</span>
-                            <span className="usage-count">{coupon.usage_count} times</span>
+                            <span className="usage-count">{coupon.usage_count} lượt</span>
                           </div>
                         ))}
                       </div>
@@ -798,7 +794,7 @@ const AdminCoupons = () => {
                   )}
                 </>
               ) : (
-                <div className="loading">Loading statistics...</div>
+                <div className="loading">Đang tải thống kê...</div>
               )}
             </div>
           </div>

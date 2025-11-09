@@ -199,17 +199,6 @@ def clear_cart(user_id: int = Query(...), db: Session = Depends(get_db)):
 @router.post("/orders", response_model=OrderSchema)
 def create_order(order: OrderCreate, user_id: int = Query(...), db: Session = Depends(get_db)):
     """Create new order"""
-    # Validate stock availability for all items first
-    for item in order.order_items:
-        product = db.query(Product).filter(Product.id == item.product_id).first()
-        if not product:
-            raise HTTPException(status_code=404, detail=f"Sản phẩm ID {item.product_id} không tồn tại")
-        if product.stock < item.quantity:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Sản phẩm '{product.name}' không đủ số lượng. Còn lại: {product.stock}"
-            )
-    
     # Calculate total amount
     total_amount = sum(item.price * item.quantity for item in order.order_items)
     
@@ -226,9 +215,8 @@ def create_order(order: OrderCreate, user_id: int = Query(...), db: Session = De
     db.commit()
     db.refresh(db_order)
     
-    # Create order items and reduce stock
+    # Create order items
     for item in order.order_items:
-        # Add order item
         order_item = OrderItemModel(
             order_id=db_order.id,
             product_id=item.product_id,
@@ -236,12 +224,6 @@ def create_order(order: OrderCreate, user_id: int = Query(...), db: Session = De
             price=item.price
         )
         db.add(order_item)
-        
-        # Reduce product stock
-        product = db.query(Product).filter(Product.id == item.product_id).first()
-        if product:
-            product.stock -= item.quantity
-            db.add(product)
     
     # Clear user's cart after order creation
     cart = db.query(Cart).filter(Cart.user_id == user_id).first()

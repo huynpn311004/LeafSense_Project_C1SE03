@@ -120,37 +120,3 @@ class DashboardStats(BaseModel):
     total_revenue: Decimal
     pending_orders: int
     active_users: int
-
-# Post Management Schemas
-class UserBasicInfo(BaseModel):
-    id: int
-    name: str
-    email: str
-    avatar_url: Optional[str] = None
-    
-    class Config:
-        from_attributes = True
-
-class PostModerationResponse(BaseModel):
-    id: int
-    title: str
-    content: str
-    image_url: Optional[str]
-    status: str
-    user_id: int
-    created_at: datetime
-    updated_at: datetime
-    user: UserBasicInfo
-    
-    class Config:
-        from_attributes = True
-
-class PostStatusUpdate(BaseModel):
-    status: str  # "published", "rejected", "pending"
-    rejection_reason: Optional[str] = None  # Lý do từ chối (nếu có)
-
-class PostModerationStats(BaseModel):
-    total_pending: int
-    total_published: int
-    total_rejected: int
-    recent_posts: List[PostModerationResponse]

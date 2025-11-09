@@ -15,57 +15,59 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      // Gọi API đăng nhập
-      const response = await axios.post('http://localhost:8000/api/auth/login', {
+      // Gọi API backend FastAPI
+      const res = await axios.post('http://localhost:8000/api/auth/login', {
         email,
         password,
       });
 
-      if (response.status === 200) {
-        const { access_token, user } = response.data;
+      if (res.status === 200) {
+        const { access_token, user } = res.data;
         
-        // Lưu thông tin vào localStorage
         localStorage.setItem('token', access_token);
         localStorage.setItem('user', JSON.stringify({
-          id: user.id,
+          id: user.id, // Add user ID for cart functionality
           name: user.name,
           email: user.email,
           avatar_url: user.avatar_url || '',
-          role: user.role || 'user',
+          role: user.role || 'user', // Thêm role vào localStorage
         }));
 
-        setSuccess('Login successful!');
+        // Hiển thị thông báo thành công
+        setSuccess('Đăng nhập thành công!');
         setError('');
 
-        // Chuyển trang dựa vào role
+        // Chuyển trang sau 1 giây dựa trên role
         setTimeout(() => {
           if (user.role === 'admin') {
-            navigate('/admin/dashboard');
+            navigate('/admin/dashboard'); // Chuyển đến admin dashboard
           } else {
-            navigate('/');
+            navigate('/'); // Chuyển đến trang chủ cho user thường
           }
         }, 1000);
       }
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (err) {
+      console.error('Login error:', err);
+      console.error('Error response:', err.response);
       
-      // Kiểm tra nếu tài khoản bị khóa
-      if (error.response && error.response.status === 403) {
+      // Kiểm tra nếu tài khoản bị khóa (status 403)
+      if (err.response && err.response.status === 403) {
+        console.log('Account locked - redirecting to /account-locked');
         navigate('/account-locked');
         return;
       }
       
-      setError('Incorrect email or password!');
+      setError('Sai email hoặc mật khẩu!');
       setSuccess('');
     }
   };
 
   return (
     <div className="login-container">
-      {/* Phần bên trái - logo */}
+      {/* Bên trái logo & nền */}
       <div className="login-left">
         <div className="login-left-content">
-          <h1 className="logo-text login-logo">LeafSense</h1>
+          <h1 className="logo-text">LeafSense</h1>
           <div className="leaf-pattern">
             {[...Array(9)].map((_, i) => (
               <div key={i} className={`leaf leaf-${i + 1}`}></div>
@@ -74,13 +76,13 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Phần bên phải - form đăng nhập */}
+      {/* Bên phải form */}
       <div className="login-right">
         <div className="login-form-container">
           <h2 className="login-title">Login</h2>
 
-          {error && <p className="login-error-message">{error}</p>}
-          {success && <p className="login-success-message">{success}</p>}
+          {error && <p className="error-message">{error}</p>}
+          {success && <p className="success-message">{success}</p>}
 
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
@@ -90,7 +92,7 @@ const Login = () => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="Nhập email"
                 required
               />
             </div>
@@ -103,14 +105,15 @@ const Login = () => {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Nhập mật khẩu"
                   maxLength="72"
                   required
                 />
                 <button
                   type="button"
                   className="toggle-btn"
-                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  onClick={() => setShowPassword((v) => !v)}
                 >
                   {showPassword ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -137,11 +140,11 @@ const Login = () => {
               Sign up for an account
             </Link>
             <Link to="/forgot-password" className="forgot-link">
-              Forgot password?
+              Forget password?
             </Link>
           </div>
 
-          <div className="login-divider"><span>or</span></div>
+          <div className="divider"><span>or</span></div>
 
           <button className="google-button"
           onClick={() => { 

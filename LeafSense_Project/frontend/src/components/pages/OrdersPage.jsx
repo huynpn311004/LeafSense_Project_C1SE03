@@ -143,6 +143,11 @@ const OrdersPage = () => {
   return (
     <Layout>
       <div className="orders-container">
+        <div className="orders-header">
+          <h1>Lịch sử đơn hàng</h1>
+          <p>Xem lại các đơn hàng bạn đã đặt từ marketplace</p>
+        </div>
+
         {/* Filter Options */}
         <div className="orders-filters">
         <div className="filter-group">
