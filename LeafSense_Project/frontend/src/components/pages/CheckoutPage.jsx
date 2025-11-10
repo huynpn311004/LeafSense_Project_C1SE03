@@ -17,10 +17,10 @@ const CheckoutPage = () => {
     note: ''
   })
 
-  // Lấy dữ liệu giỏ hàng từ navigation state hoặc database
+  // Get cart data from navigation state or database
   const [cartItems, setCartItems] = useState([])
   
-  // State cho mã giảm giá
+  // State for coupon code
   const [couponData, setCouponData] = useState({
     code: '',
     discount: 0,
@@ -30,14 +30,14 @@ const CheckoutPage = () => {
     loading: false
   })
 
-  // Load cart data khi component mount
+  // Load cart data when component mounts
   useEffect(() => {
-    // Lấy dữ liệu từ navigation state (từ CartPage)
+    // Get data from navigation state (from CartPage)
     if (location.state?.cartItems) {
       setCartItems(location.state.cartItems)
-      console.log('Đã tải dữ liệu từ navigation state:', location.state.cartItems)
+      console.log('Loaded data from navigation state:', location.state.cartItems)
       
-      // Nếu có applied coupon thì set luôn
+      // If there's an applied coupon, set it
       if (location.state.appliedCoupon) {
         setCouponData({
           ...couponData,
@@ -48,7 +48,7 @@ const CheckoutPage = () => {
         })
       }
     } else {
-      // Fallback: lấy từ database nếu không có navigation state
+      // Fallback: get from database if no navigation state
       loadCartFromDatabase()
     }
   }, [])
@@ -75,12 +75,12 @@ const CheckoutPage = () => {
 
       setCartItems(cartItems)
     } catch (error) {
-      console.error('Lỗi khi lấy giỏ hàng từ database:', error)
-      navigate('/cart') // Redirect về cart nếu có lỗi
+      console.error('Error loading cart from database:', error)
+      navigate('/cart') // Redirect to cart if error
     }
   }
 
-  // Load danh sách mã giảm giá có sẵn
+  // Load list of available coupon codes
   const loadAvailableCoupons = async () => {
     try {
       const result = await CouponService.getAvailableCoupons(calculateSubtotal())
@@ -92,7 +92,7 @@ const CheckoutPage = () => {
     }
   }
 
-  const shippingFee = 0 // Miễn phí vận chuyển
+  const shippingFee = 0 // Free shipping
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
@@ -109,7 +109,7 @@ const CheckoutPage = () => {
     return subtotal + shippingFee - discount
   }
 
-  // Xử lý nhập mã giảm giá
+  // Handle coupon code input
   const handleCouponCodeChange = (e) => {
     const code = e.target.value.toUpperCase()
     setCouponData(prev => ({
@@ -121,10 +121,10 @@ const CheckoutPage = () => {
     }))
   }
 
-  // Validate và apply mã giảm giá
+  // Validate and apply coupon code
   const handleApplyCoupon = async () => {
     if (!couponData.code.trim()) {
-      setCouponData(prev => ({ ...prev, error: 'Vui lòng nhập mã giảm giá' }))
+      setCouponData(prev => ({ ...prev, error: 'Please enter a coupon code' }))
       return
     }
 
@@ -150,7 +150,7 @@ const CheckoutPage = () => {
           isApplied: false,
           discount: 0,
           loading: false,
-          error: result.error || 'Mã giảm giá không hợp lệ'
+          error: result.error || 'Invalid coupon code'
         }))
       }
     } catch (error) {
@@ -160,12 +160,12 @@ const CheckoutPage = () => {
         isApplied: false,
         discount: 0,
         loading: false,
-        error: 'Có lỗi xảy ra khi kiểm tra mã giảm giá'
+        error: 'An error occurred while checking the coupon code'
       }))
     }
   }
 
-  // Hủy bỏ mã giảm giá
+  // Remove coupon code
   const handleRemoveCoupon = () => {
     setCouponData({
       code: '',
@@ -177,7 +177,7 @@ const CheckoutPage = () => {
     })
   }
 
-  // Áp dụng mã giảm giá từ danh sách gợi ý
+  // Apply coupon code from suggested list
   const handleSelectSuggestedCoupon = (coupon) => {
     setCouponData(prev => ({
       ...prev,
@@ -200,13 +200,13 @@ const CheckoutPage = () => {
     
     // Validate form
     if (!orderData.fullName || !orderData.address || !orderData.phone || !orderData.email) {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc!')
+      alert('Please fill in all required information!')
       return
     }
 
     // Validate cart items
     if (!cartItems || cartItems.length === 0) {
-      alert('Không có sản phẩm nào trong giỏ hàng!')
+      alert('There are no items in your cart!')
       return
     }
 
@@ -230,7 +230,7 @@ const CheckoutPage = () => {
     console.log('Submitting Order:', orderPayload)
     
     try {
-      // Chuẩn bị dữ liệu đơn hàng theo format API backend
+      // Prepare order data according to backend API format
       const orderApiData = {
         total_amount: calculateTotal(),
         payment_method: orderData.paymentMethod || 'COD',
@@ -246,16 +246,16 @@ const CheckoutPage = () => {
 
       console.log('Creating order with data:', orderApiData)
       
-      // Gọi API tạo đơn hàng
+      // Call API to create order
       const createdOrder = await ShopService.createOrder(orderApiData)
       console.log('Order created successfully:', createdOrder)
       
-      // Chỉ cần alert thành công, giỏ hàng đã được clear từ database
-      alert('Đặt hàng thành công!')
+      // Just alert success, cart has been cleared from database
+      alert('Order placed successfully!')
       navigate('/orders')
     } catch (error) {
-      console.error('Lỗi khi đặt hàng:', error)
-      alert(`Có lỗi xảy ra khi đặt hàng: ${error.message || 'Vui lòng thử lại!'}`)
+      console.error('Error placing order:', error)
+      alert(`An error occurred while placing the order: ${error.message || 'Please try again!'}`)
     }
   }
 
@@ -263,47 +263,47 @@ const CheckoutPage = () => {
     <Layout>
       <div className="checkout-page">
         <div className="checkout-container">
-          {/* Thông tin đặt hàng */}
+          {/* Order Information */}
           <div className="checkout-form-section">
-            <h2>Thông tin đặt hàng</h2>
+            <h2>Order Information</h2>
             
             <form onSubmit={handleSubmitOrder} className="checkout-form">
               <div className="form-group">
-                <label htmlFor="fullName">Họ và tên *</label>
+                <label htmlFor="fullName">Full Name *</label>
                 <input
                   type="text"
                   id="fullName"
                   name="fullName"
                   value={orderData.fullName}
                   onChange={handleInputChange}
-                  placeholder="Nhập họ và tên"
+                  placeholder="Enter full name"
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="address">Địa chỉ *</label>
+                <label htmlFor="address">Address *</label>
                 <input
                   type="text"
                   id="address"
                   name="address"
                   value={orderData.address}
                   onChange={handleInputChange}
-                  placeholder="Nhập địa chỉ"
+                  placeholder="Enter address"
                   required
                 />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="phone">Điện thoại *</label>
+                  <label htmlFor="phone">Phone *</label>
                   <input
                     type="tel"
                     id="phone"
                     name="phone"
                     value={orderData.phone}
                     onChange={handleInputChange}
-                    placeholder="Nhập số điện thoại"
+                    placeholder="Enter phone number"
                     required
                   />
                 </div>
@@ -316,20 +316,20 @@ const CheckoutPage = () => {
                     name="email"
                     value={orderData.email}
                     onChange={handleInputChange}
-                    placeholder="Nhập email"
+                    placeholder="Enter email"
                     required
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label htmlFor="note">Ghi chú</label>
+                <label htmlFor="note">Note</label>
                 <textarea
                   id="note"
                   name="note"
                   value={orderData.note}
                   onChange={handleInputChange}
-                  placeholder="Ghi chú về đơn hàng"
+                  placeholder="Order notes"
                   rows="3"
                 />
               </div>
@@ -340,38 +340,33 @@ const CheckoutPage = () => {
                   className="back-button"
                   onClick={() => navigate('/marketplace')}
                 >
-                  ← Quay lại mua hàng
+                  ← Back to Shopping
                 </button>
                 <button type="submit" className="order-button">
-                  ĐẶT HÀNG
+                  PLACE ORDER
                 </button>
               </div>
             </form>
           </div>
 
-          {/* Đơn hàng */}
+          {/* Order Summary */}
           <div className="order-summary-section">
-            <h2>Đơn hàng</h2>
+            <h2>Order Summary</h2>
             <div className="order-summary-header">
               <span className="items-count">
-                {cartItems.length} sản phẩm
+                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
               </span>
-              {/* Debug info - có thể xóa sau khi fix */}
-              {process.env.NODE_ENV === 'development' && (
-                <details style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
-                  <summary>Debug Info</summary>
-                  <pre>{JSON.stringify(cartItems, null, 2)}</pre>
-                </details>
-              )}
             </div>
             
             <div className="order-items">
               {cartItems.length > 0 ? (
                 cartItems.map(item => (
                   <div key={item.id || item._id} className="order-item">
-                    <div className="item-info">
-                      <span className="item-name">{item.name || item.title || 'Sản phẩm không xác định'}</span>
-                      <span className="item-quantity">(x{item.quantity || 1})</span>
+                    <div className="item-details">
+                      <div className="item-name">{item.name || item.title || 'Unknown product'}</div>
+                      <div className="item-meta">
+                        <span className="item-quantity">Quantity: {item.quantity || 1}</span>
+                      </div>
                     </div>
                     <div className="item-price">
                       {((item.price || 0) * (item.quantity || 1)).toLocaleString('vi-VN')} ₫
@@ -380,15 +375,15 @@ const CheckoutPage = () => {
                 ))
               ) : (
                 <div className="no-items">
-                  <p>Không có sản phẩm nào trong giỏ hàng</p>
+                  <p>No items in cart</p>
                 </div>
               )}
             </div>
 
-            {/* Mã giảm giá section */}
+            {/* Coupon section */}
             {couponData.isApplied && (
               <div className="coupon-section">
-                <h3>Mã giảm giá</h3>
+                <h3>Coupon Code</h3>
                 <div className="applied-coupon-display">
                   <div className="coupon-info">
                     <span className="coupon-code-display">{couponData.code}</span>
@@ -397,7 +392,7 @@ const CheckoutPage = () => {
                     </span>
                   </div>
                   <div className="coupon-success">
-                    ✅ Mã giảm giá đã được áp dụng
+                    ✅ Coupon code applied
                   </div>
                 </div>
               </div>
@@ -405,24 +400,24 @@ const CheckoutPage = () => {
 
             <div className="order-calculations">
               <div className="calculation-row">
-                <span>Tạm tính:</span>
+                <span>Subtotal:</span>
                 <span>{calculateSubtotal().toLocaleString('vi-VN')} ₫</span>
               </div>
               
               <div className="calculation-row">
-                <span>Phí vận chuyển:</span>
-                <span>{shippingFee === 0 ? 'Miễn phí' : `${shippingFee.toLocaleString('vi-VN')} ₫`}</span>
+                <span>Shipping:</span>
+                <span>{shippingFee === 0 ? 'Free' : `${shippingFee.toLocaleString('vi-VN')} ₫`}</span>
               </div>
 
               {couponData.isApplied && (
                 <div className="calculation-row discount">
-                  <span>Giảm giá ({couponData.code}):</span>
+                  <span>Discount ({couponData.code}):</span>
                   <span>-{calculateDiscount().toLocaleString('vi-VN')} ₫</span>
                 </div>
               )}
 
               <div className="total-row">
-                <span>Tổng đơn:</span>
+                <span>Total:</span>
                 <span className="total-price">{calculateTotal().toLocaleString('vi-VN')} ₫</span>
               </div>
             </div>

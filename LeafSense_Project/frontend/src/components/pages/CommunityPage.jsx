@@ -381,11 +381,6 @@ const CommunityPage = () => {
         ) : (
           <div className="auth-info">
             <p>Đăng nhập để tạo bài viết và tham gia cộng đồng</p>
-            <small>
-              Debug: Auth={isAuthenticated ? 'true' : 'false'}, 
-              User={user?.name || 'null'}, 
-              Token={localStorage.getItem('token') ? 'exists' : 'missing'}
-            </small>
           </div>
         )}
 

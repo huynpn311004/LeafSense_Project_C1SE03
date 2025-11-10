@@ -26,10 +26,10 @@ const CartPage = () => {
         return
       }
 
-      // Lấy giỏ hàng từ database
+      // Get cart from database
       const cartData = await ShopService.getCart()
       
-      // Convert cart data từ database format sang frontend format
+      // Convert cart data from database format to frontend format
       const cartItems = cartData.cart_items?.map(item => ({
         id: item.product.id,
         name: item.product.name,
@@ -38,13 +38,13 @@ const CartPage = () => {
         description: item.product.description,
         stock: item.product.stock,
         quantity: item.quantity,
-        cart_item_id: item.id // Lưu ID của cart item để dùng cho update/delete
+        cart_item_id: item.id // Save cart item ID for update/delete
       })) || []
 
       setCartItems(cartItems)
       
     } catch (error) {
-      console.error('Lỗi khi đồng bộ giỏ hàng từ database:', error)
+      console.error('Error syncing cart from database:', error)
       // Set empty cart if database sync fails
       setCartItems([])
     } finally {
@@ -52,9 +52,9 @@ const CartPage = () => {
     }
   }
 
-  // Load cart data khi component mount
+  // Load cart data when component mounts
   useEffect(() => {
-    // Chỉ đồng bộ từ database
+    // Only sync from database
     syncCartFromDatabase()
   }, [])
 
@@ -112,12 +112,12 @@ const CartPage = () => {
   const getSelectedItemsDiscount = () => {
     if (!appliedCoupon) return 0
     
-    // Sử dụng discount_amount từ API nếu có
+    // Use discount_amount from API if available
     if (appliedCoupon.discount_amount !== undefined) {
       return appliedCoupon.discount_amount
     }
     
-    // Fallback để tương thích với dữ liệu cũ
+    // Fallback for compatibility with old data
     const subtotal = getSelectedItemsTotal()
     if (appliedCoupon.type === 'percentage') {
       return subtotal * (appliedCoupon.value / 100)
@@ -140,10 +140,10 @@ const CartPage = () => {
       if (result.success) {
         setAvailableCoupons(result.data)
       } else {
-        console.error('Lỗi khi tải coupon:', result.error)
+        console.error('Error loading coupons:', result.error)
       }
     } catch (error) {
-      console.error('Lỗi khi tải coupon:', error)
+      console.error('Error loading coupons:', error)
     } finally {
       setLoadingCoupons(false)
     }
@@ -154,7 +154,7 @@ const CartPage = () => {
     setCouponError('')
     
     if (!couponCode.trim()) {
-      setCouponError('Vui lòng nhập mã giảm giá')
+      setCouponError('Please enter a coupon code')
       return
     }
 
@@ -165,7 +165,7 @@ const CartPage = () => {
       if (result.success && result.data.valid) {
         // Check if same coupon is already applied
         if (appliedCoupon && appliedCoupon.coupon?.code === couponCode.toUpperCase()) {
-          setCouponError('Mã giảm giá này đã được áp dụng')
+          setCouponError('This coupon has already been applied')
           return
         }
 
@@ -180,11 +180,11 @@ const CartPage = () => {
         setCouponCode('')
         setCouponError('')
       } else {
-        setCouponError(result.data?.message || result.error || 'Mã giảm giá không hợp lệ')
+        setCouponError(result.data?.message || result.error || 'Invalid coupon code')
       }
     } catch (error) {
-      console.error('Lỗi khi áp dụng coupon:', error)
-      setCouponError('Có lỗi xảy ra khi áp dụng mã giảm giá')
+      console.error('Error applying coupon:', error)
+      setCouponError('An error occurred while applying the coupon')
     }
   }
 
@@ -199,12 +199,12 @@ const CartPage = () => {
       const currentItem = cartItems.find(item => item.id === itemId)
       if (!currentItem) return
 
-      // Gọi API để cập nhật trong database
+      // Call API to update in database
       if (currentItem.cart_item_id) {
         await ShopService.updateCartItem(currentItem.cart_item_id, currentItem.quantity + 1)
       }
 
-      // Cập nhật local state
+      // Update local state
       const newCartItems = cartItems.map(item => 
         item.id === itemId 
           ? { ...item, quantity: item.quantity + 1 }
@@ -213,8 +213,8 @@ const CartPage = () => {
       setCartItems(newCartItems)
       
     } catch (error) {
-      console.error('Lỗi khi tăng số lượng:', error)
-      // Nếu API thất bại, vẫn cập nhật local state
+      console.error('Error increasing quantity:', error)
+      // If API fails, still update local state
       const newCartItems = cartItems.map(item => 
         item.id === itemId 
           ? { ...item, quantity: item.quantity + 1 }
@@ -230,27 +230,27 @@ const CartPage = () => {
       if (!currentItem) return
       
       if (currentItem.quantity === 1) {
-        // Hiện popup xác nhận khi số lượng về 0
-        const confirmRemove = window.confirm(`Bạn có muốn xóa "${currentItem.name}" khỏi giỏ hàng không?`)
+        // Show confirmation popup when quantity reaches 0
+        const confirmRemove = window.confirm(`Do you want to remove "${currentItem.name}" from your cart?`)
         
         if (confirmRemove) {
-          // Gọi API để xóa khỏi database
+          // Call API to remove from database
           if (currentItem.cart_item_id) {
             await ShopService.removeFromCart(currentItem.cart_item_id)
           }
 
-          // Xóa sản phẩm khỏi giỏ hàng
+          // Remove product from cart
           const newCartItems = cartItems.filter(item => item.id !== itemId)
           setCartItems(newCartItems)
         }
-        // Nếu không xác nhận, không làm gì cả (giữ nguyên quantity = 1)
+        // If not confirmed, do nothing (keep quantity = 1)
       } else {
-        // Gọi API để cập nhật trong database
+        // Call API to update in database
         if (currentItem.cart_item_id) {
           await ShopService.updateCartItem(currentItem.cart_item_id, currentItem.quantity - 1)
         }
 
-        // Giảm số lượng bình thường
+        // Decrease quantity normally
         const newCartItems = cartItems.map(item => 
           item.id === itemId 
             ? { ...item, quantity: item.quantity - 1 }
@@ -259,12 +259,12 @@ const CartPage = () => {
         setCartItems(newCartItems)
       }
     } catch (error) {
-      console.error('Lỗi khi giảm số lượng:', error)
-      // Nếu API thất bại, vẫn cập nhật local state như cũ
+      console.error('Error decreasing quantity:', error)
+      // If API fails, still update local state as before
       const currentItem = cartItems.find(item => item.id === itemId)
       
       if (currentItem && currentItem.quantity === 1) {
-        const confirmRemove = window.confirm(`Bạn có muốn xóa "${currentItem.name}" khỏi giỏ hàng không?`)
+        const confirmRemove = window.confirm(`Do you want to remove "${currentItem.name}" from your cart?`)
         
         if (confirmRemove) {
           const newCartItems = cartItems.filter(item => item.id !== itemId)
@@ -289,11 +289,11 @@ const CartPage = () => {
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      alert('Giỏ hàng trống!')
+      alert('Cart is empty!')
       return
     }
     
-    // Truyền dữ liệu qua navigation state thay vì localStorage
+    // Pass data via navigation state instead of localStorage
     navigate('/checkout', {
       state: {
         cartItems: cartItems,
@@ -303,15 +303,15 @@ const CartPage = () => {
   }
 
   const handleClearCart = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa tất cả sản phẩm khỏi giỏ hàng?')) {
+    if (window.confirm('Are you sure you want to remove all products from your cart?')) {
       try {
-        // Gọi API để xóa giỏ hàng khỏi database
+        // Call API to clear cart from database
         await ShopService.clearCart()
       } catch (error) {
-        console.error('Lỗi khi xóa giỏ hàng từ database:', error)
+        console.error('Error clearing cart from database:', error)
       }
 
-      // Xóa local state
+      // Clear local state
       setCartItems([])
       setAppliedCoupon(null)
       setCouponCode('')
@@ -323,7 +323,7 @@ const CartPage = () => {
       <Layout>
         <div className="cart-page-loading">
           <div className="loading-spinner"></div>
-          <p>Đang tải giỏ hàng...</p>
+          <p>Loading cart...</p>
         </div>
       </Layout>
     )
@@ -333,34 +333,32 @@ const CartPage = () => {
     <Layout>
       <div className="cart-page">
         <div className="cart-page-header">
-          <h1>🛒 Giỏ hàng của bạn</h1>
           <div className="cart-header-info">
-            <span className="cart-count">{cartItems.length} sản phẩm</span>
-            {cartItems.length > 0 && (
-              <>
-                <label className="select-all-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedItems.size === cartItems.length && cartItems.length > 0}
-                    onChange={handleSelectAll}
-                  />
-                  <span>Chọn tất cả</span>
-                </label>
-                <button className="clear-cart-btn" onClick={handleClearCart}>
-                  Xóa tất cả
-                </button>
-              </>
-            )}
+            <span className="cart-count">{cartItems.length} products</span>
           </div>
+          {cartItems.length > 0 && (
+            <div className="cart-header-controls">
+              <label className="select-all-checkbox">
+                <input
+                  type="checkbox"
+                  checked={selectedItems.size === cartItems.length && cartItems.length > 0}
+                  onChange={handleSelectAll}
+                />
+                <span>Select all</span>
+              </label>
+              <button className="clear-cart-btn" onClick={handleClearCart}>
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
 
         {cartItems.length === 0 ? (
           <div className="empty-cart">
-            <div className="empty-cart-icon">🛒</div>
-            <h2>Giỏ hàng của bạn đang trống</h2>
-            <p>Hãy thêm một số sản phẩm vào giỏ hàng để bắt đầu mua sắm!</p>
+            <h2>Your cart is empty</h2>
+            <p>Add some products to your cart to start shopping!</p>
             <button className="continue-shopping-btn" onClick={handleContinueShopping}>
-              Tiếp tục mua hàng
+              Continue shopping
             </button>
           </div>
         ) : (
@@ -426,17 +424,17 @@ const CartPage = () => {
         {selectedItems.size > 0 && (
           <div className="cart-summary-fixed">
             <div className="summary-card">
-              <h3>Thanh toán ({selectedItems.size} sản phẩm)</h3>
+              <h3>Checkout ({selectedItems.size} products)</h3>
               
               {/* Coupon Section */}
               <div className="coupon-section">
-                <h4>Mã giảm giá</h4>
+                <h4>Coupon Code</h4>
                 {!appliedCoupon ? (
                   <div className="coupon-input-section">
                     <div className="coupon-input-group">
                       <input
                         type="text"
-                        placeholder="Nhập mã giảm giá..."
+                        placeholder="Enter coupon code..."
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
                         className="coupon-input"
@@ -446,7 +444,7 @@ const CartPage = () => {
                         className="apply-coupon-btn"
                         onClick={handleApplyCoupon}
                       >
-                        Áp dụng
+                        Apply
                       </button>
                     </div>
                     {couponError && (
@@ -456,7 +454,7 @@ const CartPage = () => {
                     {/* Available Coupons List */}
                     {availableCoupons.length > 0 && (
                       <div className="available-coupons">
-                        <h5>Mã giảm giá có thể sử dụng:</h5>
+                        <h5>Available coupons:</h5>
                         <div className="coupons-list">
                           {availableCoupons.map((coupon) => (
                             <div 
@@ -464,25 +462,32 @@ const CartPage = () => {
                               className={`coupon-item ${coupon.can_use ? 'usable' : 'disabled'}`}
                               onClick={() => coupon.can_use && setCouponCode(coupon.code)}
                             >
-                              <div className="coupon-details">
-                                <span className="coupon-item-code">{coupon.code}</span>
-                                <span className="coupon-item-desc">{coupon.description}</span>
-                                {!coupon.can_use && coupon.reason && (
-                                  <span className="coupon-item-reason">{coupon.reason}</span>
+                              <div className="coupon-code">
+                                {coupon.code}
+                              </div>
+                              <div className="coupon-right">
+                                <div className="coupon-details">
+                                  <span className="coupon-name">{coupon.name}</span>
+                                  {coupon.description && (
+                                    <span className="coupon-item-desc">{coupon.description}</span>
+                                  )}
+                                  {!coupon.can_use && coupon.reason && (
+                                    <span className="coupon-item-reason">{coupon.reason}</span>
+                                  )}
+                                </div>
+                                {coupon.can_use && (
+                                  <button 
+                                    className="use-coupon-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setCouponCode(coupon.code)
+                                      handleApplyCoupon()
+                                    }}
+                                  >
+                                    Use
+                                  </button>
                                 )}
                               </div>
-                              {coupon.can_use && (
-                                <button 
-                                  className="use-coupon-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setCouponCode(coupon.code)
-                                    handleApplyCoupon()
-                                  }}
-                                >
-                                  Sử dụng
-                                </button>
-                              )}
                             </div>
                           ))}
                         </div>
@@ -490,20 +495,20 @@ const CartPage = () => {
                     )}
                     
                     {loadingCoupons && (
-                      <div className="loading-coupons">Đang tải mã giảm giá...</div>
+                      <div className="loading-coupons">Loading coupons...</div>
                     )}
                   </div>
                 ) : (
                   <div className="applied-coupon">
+                    <span className="coupon-code">{appliedCoupon.code}</span>
                     <div className="coupon-info">
-                      <span className="coupon-code">🎟️ {appliedCoupon.code}</span>
                       <span className="coupon-desc">{appliedCoupon.description}</span>
                     </div>
                     <button 
                       className="remove-coupon-btn"
                       onClick={handleRemoveCoupon}
                     >
-                      ✕
+                      ×
                     </button>
                   </div>
                 )}
@@ -535,14 +540,14 @@ const CartPage = () => {
                   className="continue-shopping-btn"
                   onClick={handleContinueShopping}
                 >
-                  ← Tiếp tục mua hàng
+                  ← Continue shopping
                 </button>
                 <button 
                   className="checkout-btn"
                   onClick={handleCheckout}
                   disabled={selectedItems.size === 0}
                 >
-                  Thanh toán ngay →
+                  Checkout now →
                 </button>
               </div>
             </div>

@@ -44,14 +44,13 @@
   border-bottom: 3px solid #28a745;
 }
 
-.cart-page-header h1 {
-  color: #28a745;
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0;
+.cart-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.cart-header-info {
+.cart-header-controls {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -89,12 +88,6 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.empty-cart-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
 }
 
 .empty-cart h2 {
@@ -412,10 +405,6 @@
     gap: 0.75rem;
     text-align: center;
   }
-  
-  .cart-page-header h1 {
-    font-size: 1.75rem;
-  }
 
   .cart-item-card {
     gap: 0.75rem;
@@ -557,23 +546,24 @@
 .applied-coupon {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.5rem;
   background: #f0f9ff;
   border: 1px solid #0ea5e9;
   border-radius: 8px;
 }
 
-.coupon-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.coupon-code {
+.applied-coupon .coupon-code {
   font-weight: 600;
   color: #0ea5e9;
   font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.coupon-info {
+  display: flex;
+  flex: 1;
+  align-items: center;
 }
 
 .coupon-desc {
@@ -629,9 +619,9 @@
 
 .coupon-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.5rem;
+  gap: 1rem;
+  padding: 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   background: #f9fafb;
@@ -650,10 +640,36 @@
   background: #f3f4f6;
 }
 
+.coupon-code {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.9375rem;
+  flex-shrink: 0;
+  min-width: 120px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.coupon-right {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 0.75rem;
+}
+
 .coupon-details {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+}
+
+.coupon-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.875rem;
 }
 
 .coupon-item-code {

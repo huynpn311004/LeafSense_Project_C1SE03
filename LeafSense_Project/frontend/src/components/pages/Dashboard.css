@@ -58,9 +58,6 @@
   border-radius: 12px;
   padding: 1.25rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
   border: 1px solid #e5e7eb;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -70,16 +67,8 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.stat-icon {
-  font-size: 2rem;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f4f6;
-  border-radius: 12px;
-  flex-shrink: 0;
+.stat-info {
+  width: 100%;
 }
 
 .stat-info h3 {
@@ -102,163 +91,6 @@
 .stat-info small {
   color: #9ca3af;
   font-size: 0.75rem;
-}
-
-/* Quick Actions */
-.quick-actions {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-}
-
-.quick-actions h3 {
-  color: #111827;
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 1rem 0;
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  color: #475569;
-  font-weight: 500;
-}
-
-.action-btn:hover {
-  background: #3b82f6;
-  border-color: #3b82f6;
-  color: white;
-  transform: translateY(-1px);
-}
-
-.action-icon {
-  font-size: 1.5rem;
-}
-
-/* Recent Activity */
-.recent-activity {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-}
-
-.activity-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.activity-header h3 {
-  color: #111827;
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.view-all-btn {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.view-all-btn:hover {
-  background: #2563eb;
-}
-
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.activity-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #f3f4f6;
-}
-
-.activity-icon {
-  font-size: 1.5rem;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e5e7eb;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.activity-content {
-  flex: 1;
-}
-
-.activity-content p {
-  margin: 0 0 0.25rem 0;
-  color: #111827;
-  font-size: 0.875rem;
-}
-
-.activity-time {
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-/* No Activity State */
-.no-activity {
-  text-align: center;
-  padding: 2rem;
-  color: #6b7280;
-}
-
-.no-activity p {
-  margin: 0 0 1rem 0;
-  font-size: 0.875rem;
-}
-
-.start-analysis-btn {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.start-analysis-btn:hover {
-  background: #059669;
 }
 
 /* Loading State */
@@ -297,20 +129,6 @@
   .stats-grid {
     grid-template-columns: 1fr;
   }
-
-  .actions-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .activity-header {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: stretch;
-  }
-
-  .view-all-btn {
-    align-self: flex-end;
-  }
 }
 
 @media (max-width: 480px) {
@@ -319,30 +137,12 @@
   }
 
   .stat-card {
-    flex-direction: column;
     text-align: center;
-    gap: 0.75rem;
     padding: 1rem;
-  }
-
-  .stat-icon {
-    align-self: center;
   }
 
   .stat-number {
     font-size: 1.75rem;
-  }
-
-  .action-btn {
-    flex-direction: column;
-    text-align: center;
-    padding: 1.25rem;
-  }
-
-  .activity-item {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
   }
 
   .auth-notice {
