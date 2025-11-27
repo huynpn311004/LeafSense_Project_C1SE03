@@ -142,9 +142,18 @@ class ReviewUpdate(BaseModel):
     rating: Optional[int] = Field(None, ge=1, le=5)
     comment: Optional[str] = None
 
+class ReviewUser(BaseModel):
+    id: int
+    name: str
+    email: str
+    
+    class Config:
+        from_attributes = True
+
 class Review(ReviewBase):
     id: int
     user_id: int
+    user: Optional[ReviewUser] = None
     created_at: datetime
     
     class Config:

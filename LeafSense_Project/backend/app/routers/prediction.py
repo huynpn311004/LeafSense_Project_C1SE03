@@ -31,9 +31,11 @@ router = APIRouter(prefix="/api/prediction", tags=["prediction"])
 # ---- Load environment and Gemini key ----
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables")
-genai.configure(api_key=GEMINI_API_KEY)
+# Chỉ configure khi có API key, không raise error lúc startup
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+else:
+    logger.warning("GEMINI_API_KEY not found. Treatment suggestions will not work.")
 
 # ---- Disease colors ----
 DISEASE_COLORS = {
@@ -49,49 +51,71 @@ SUPPORTED_DISEASES = ['nodisease', 'rust', 'phoma', 'miner']
 
 # ---- Load YOLO models ----
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-cls_model_path = os.path.join(BASE_DIR, '..', 'ml_model', 'coffee_cls_best.pt')
-seg_model_path = os.path.join(BASE_DIR, '..', 'ml_model', 'coffee_seg_best.pt')
+# Models are in ml_model/ml_model/ directory
+cls_model_path = os.path.join(BASE_DIR, '..', 'ml_model', 'ml_model', 'coffee_cls_best.pt')
+seg_model_path = os.path.join(BASE_DIR, '..', 'ml_model', 'ml_model', 'coffee_seg_best.pt')
 
-cls_model = YOLO(cls_model_path)
-seg_model = YOLO(seg_model_path)
+# Load models with error handling
+try:
+    if os.path.exists(cls_model_path):
+        cls_model = YOLO(cls_model_path)
+    else:
+        logger.warning(f"Classification model not found at {cls_model_path}")
+        cls_model = None
+    if os.path.exists(seg_model_path):
+        seg_model = YOLO(seg_model_path)
+    else:
+        logger.warning(f"Segmentation model not found at {seg_model_path}")
+        seg_model = None
+except Exception as e:
+    logger.error(f"Error loading YOLO models: {e}")
+    cls_model = None
+    seg_model = None
 
 # ---- Function: get treatment suggestion from Gemini ----
 def get_treatment_suggestion(disease_name: str, confidence: float) -> str:
     """Gọi Gemini API để lấy gợi ý điều trị và phòng ngừa bệnh cà phê."""
 
     try:
+        # Kiểm tra GEMINI_API_KEY trước khi sử dụng
+        if not GEMINI_API_KEY:
+            return "Tính năng gợi ý điều trị tạm thời không khả dụng. Vui lòng cấu hình GEMINI_API_KEY trong file .env"
+        
         disease_info = "nodisease" if disease_name.lower() == "nodisease" else f"bệnh {disease_name}"
         confidence_level = "%.1f%%" % (confidence * 100)
         
         prompt = f"""
-        Với vai trò là chuyên gia nông nghiệp về cây cà phê, hãy phân tích chi tiết về {disease_info} 
-        (độ tin cậy: {confidence_level}) và đưa ra hướng dẫn cụ thể.
+        Bạn là chuyên gia điều trị bệnh cà phê. Hãy phân tích tình trạng {disease_info} và trả lời NGẮN GỌN.
+        Bắt buộc giữ đúng 8 mục, mỗi mục trên một dòng tiêu đề, phần nội dung liệt kê gạch đầu dòng:
 
-        Yêu cầu trả lời theo format sau:
+        1. Triệu chứng
+           - Nêu 2-3 dấu hiệu nhận biết rõ ràng
+        2. Nguyên nhân
+           - Chỉ rõ tác nhân gây bệnh và điều kiện thuận lợi
+        3. Thuốc điều trị chính
+           - Liệt kê 2-3 hoạt chất khuyến nghị
+        4. Liều lượng
+           - Ghi rõ liều dùng tham khảo (ví dụ ml/bình 16L)
+        5. Phác đồ điều trị
+           - Liệt kê từng bước xử lý đánh số Bước 1, Bước 2...
+        6. Lịch phun
+           - Số lần và khoảng cách giữa các lần phun
+        7. Thời điểm phun
+           - Khung thời gian trong ngày hoặc giai đoạn sinh trưởng
+        8. Biện pháp phòng ngừa
+           - Các biện pháp canh tác và vệ sinh đồng ruộng
 
-        1. NGUYÊN NHÂN:
-        - Liệt kê các nguyên nhân chính
-        - Điều kiện môi trường thuận lợi
-
-        2. GIẢI PHÁP ĐIỀU TRỊ:
-        - Các biện pháp xử lý khẩn cấp
-        - Thuốc đặc trị và liều lượng
-        - Thời gian điều trị dự kiến
-
-        3. PHÒNG NGỪA:
-        - Biện pháp canh tác
-        - Chế độ chăm sóc
-        - Điều kiện môi trường cần duy trì
-
-        Trả lời bằng Tiếng Việt, ngắn gọn, dễ hiểu.
+        Lưu ý: trả lời hoàn toàn bằng tiếng Việt, không thêm mục khác.
         """
 
-        if disease_name.lower() == "nodisease":
+        disease_name_lower = disease_name.lower()
+
+        if disease_name_lower == "nodisease":
             return "Cây của bạn hoàn toàn khỏe mạnh! Hãy tiếp tục duy trì chế độ chăm sóc hiện tại."
         
-        if disease_name.lower() == "unknown":
+        if disease_name_lower == "unknown":
             return "Không thể nhận diện được loại bệnh này."
-
+        
         # Get available models
         available_models = [m.name for m in genai.list_models()]
         if "models/gemini-2.5-pro" not in available_models:
@@ -144,6 +168,12 @@ async def analyze_image(
     image = original_image.copy()  # Tạo copy để xử lý
 
     # 2️⃣ Phân loại bệnh (classification)
+    if cls_model is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Classification model not loaded. Please check model files."
+        )
+    
     try:
         cls_results = cls_model(image)[0]
         cls_index = int(cls_results.probs.top1)
@@ -160,17 +190,24 @@ async def analyze_image(
         logger.info(f"Disease classification completed: {cls_prediction['class']} ({cls_prediction['confidence']:.2%})")
     except Exception as e:
         logger.error(f"Error in classification: {str(e)}")
-        raise
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in classification: {str(e)}"
+        )
 
     # 3️⃣ Phân vùng vùng bệnh (segmentation)
-    seg_results = seg_model(image)[0]
-    boxes = seg_results.boxes
+    if seg_model is None:
+        logger.warning("Segmentation model not loaded. Skipping segmentation.")
+        seg_results = None
+        boxes = None
+    else:
+            boxes = seg_results.boxes
 
     draw = ImageDraw.Draw(image)
     seg_predictions = []
     logger.info("Starting disease region segmentation")
 
-    if boxes is not None:
+    if seg_results is not None and boxes is not None:
         for box in boxes:
             try:
                 xy = box.xyxy[0].tolist()  # [x1, y1, x2, y2]
@@ -238,7 +275,7 @@ async def analyze_image(
             try:
                 db.rollback()
             except Exception as rollback_error:
-                logger.error(f"Rollback error: {str(rollback_error)}")
+                pass
 
     # 7️⃣ Trả về kết quả (cho cả trường hợp đã đăng nhập hoặc chưa)
     response_data = {

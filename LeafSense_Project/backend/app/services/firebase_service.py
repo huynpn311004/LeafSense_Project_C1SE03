@@ -3,6 +3,7 @@ import uuid
 import io
 import base64
 from PIL import Image
+from fastapi import UploadFile
 
 def upload_image_to_firebase(local_path: str, folder: str = "uploads"):
     """Upload ảnh lên Firebase và trả về URL công khai"""
@@ -39,3 +40,25 @@ def upload_base64_image_to_firebase(base64_data: str, folder: str = "uploads", f
     image_bytes = base64.b64decode(base64_data)
     
     return upload_image_from_bytes_to_firebase(image_bytes, folder, filename_prefix)
+
+async def upload_file_to_firebase(file: UploadFile, folder: str = "uploads", filename_prefix: str = "file"):
+    """Upload file từ FastAPI UploadFile lên Firebase và trả về URL công khai"""
+    # Đọc content của file
+    file_content = await file.read()
+    
+    # Tạo tên file unique
+    file_extension = file.filename.split('.')[-1] if file.filename and '.' in file.filename else 'jpg'
+    blob_name = f"{folder}/{filename_prefix}_{uuid.uuid4()}.{file_extension}"
+    
+    # Upload lên Firebase
+    blob = bucket.blob(blob_name)
+    blob.upload_from_string(
+        file_content, 
+        content_type=file.content_type or 'application/octet-stream'
+    )
+    blob.make_public()
+    
+    # Reset file pointer về đầu (nếu cần sử dụng lại)
+    await file.seek(0)
+    
+    return blob.public_url

@@ -278,10 +278,10 @@ class ShopService {
   // ==================== REVIEWS ====================
   async createReview(productId, rating, comment) {
     try {
-      const userId = this.getUserId();
-      if (!userId) throw new Error('User not logged in');
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('User not logged in');
 
-      const response = await fetch(`${API_BASE_URL}/reviews?user_id=${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/reviews`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify({
@@ -292,7 +292,8 @@ class ShopService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to create review' }));
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
       return await response.json();

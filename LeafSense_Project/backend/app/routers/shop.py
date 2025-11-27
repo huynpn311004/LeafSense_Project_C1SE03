@@ -4,6 +4,7 @@ from typing import List, Optional
 from decimal import Decimal
 
 from core.database import get_db
+from core.security import get_current_user
 from app.models.product import Product
 from app.models.category import Category
 from app.models.cart import Cart
@@ -199,6 +200,17 @@ def clear_cart(user_id: int = Query(...), db: Session = Depends(get_db)):
 @router.post("/orders", response_model=OrderSchema)
 def create_order(order: OrderCreate, user_id: int = Query(...), db: Session = Depends(get_db)):
     """Create new order"""
+    # Validate stock availability for all items first
+    for item in order.order_items:
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Sản phẩm ID {item.product_id} không tồn tại")
+        if product.stock < item.quantity:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Sản phẩm '{product.name}' không đủ số lượng. Còn lại: {product.stock}"
+            )
+    
     # Calculate total amount
     total_amount = sum(item.price * item.quantity for item in order.order_items)
     
@@ -215,8 +227,9 @@ def create_order(order: OrderCreate, user_id: int = Query(...), db: Session = De
     db.commit()
     db.refresh(db_order)
     
-    # Create order items
+    # Create order items and reduce stock
     for item in order.order_items:
+        # Add order item
         order_item = OrderItemModel(
             order_id=db_order.id,
             product_id=item.product_id,
@@ -224,6 +237,12 @@ def create_order(order: OrderCreate, user_id: int = Query(...), db: Session = De
             price=item.price
         )
         db.add(order_item)
+        
+        # Reduce product stock
+        product = db.query(Product).filter(Product.id == item.product_id).first()
+        if product:
+            product.stock -= item.quantity
+            db.add(product)
     
     # Clear user's cart after order creation
     cart = db.query(Cart).filter(Cart.user_id == user_id).first()
@@ -268,10 +287,23 @@ def update_order(
 # ==================== REVIEW ENDPOINTS ====================
 
 @router.post("/reviews", response_model=ReviewSchema)
-def create_review(review: ReviewCreate, user_id: int = Query(...), db: Session = Depends(get_db)):
-    """Create product review"""
+def create_review(
+    review: ReviewCreate, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create product review (requires authentication)"""
+    # Check if user already reviewed this product
+    existing_review = db.query(Review).filter(
+        Review.user_id == current_user.id,
+        Review.product_id == review.product_id
+    ).first()
+    
+    if existing_review:
+        raise HTTPException(status_code=400, detail="You have already reviewed this product")
+    
     db_review = Review(
-        user_id=user_id,
+        user_id=current_user.id,
         product_id=review.product_id,
         rating=review.rating,
         comment=review.comment
@@ -283,8 +315,12 @@ def create_review(review: ReviewCreate, user_id: int = Query(...), db: Session =
 
 @router.get("/products/{product_id}/reviews", response_model=List[ReviewSchema])
 def get_product_reviews(product_id: int, db: Session = Depends(get_db)):
-    """Get product reviews"""
-    return db.query(Review).filter(Review.product_id == product_id).all()
+    """Get product reviews with user information"""
+    from sqlalchemy.orm import joinedload
+    reviews = db.query(Review).options(
+        joinedload(Review.user)
+    ).filter(Review.product_id == product_id).order_by(Review.created_at.desc()).all()
+    return reviews
 
 @router.put("/reviews/{review_id}", response_model=ReviewSchema)
 def update_review(

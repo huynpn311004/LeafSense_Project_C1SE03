@@ -51,26 +51,26 @@ class Coupon(Base):
         from datetime import datetime
         
         if not self.is_active or self.status != CouponStatusEnum.ACTIVE:
-            return False, "Mã giảm giá không khả dụng"
+            return False, "Coupon is not available"
             
         now = datetime.utcnow()
         if now < self.start_date:
-            return False, "Mã giảm giá chưa có hiệu lực"
+            return False, "Coupon is not yet valid"
             
         if now > self.end_date:
-            return False, "Mã giảm giá đã hết hạn"
+            return False, "Coupon has expired"
             
         if self.total_usage_limit and self.current_usage_count >= self.total_usage_limit:
-            return False, "Mã giảm giá đã được sử dụng hết"
+            return False, "Coupon has been fully used"
             
-        return True, "Hợp lệ"
+        return True, "Valid"
     
     def calculate_discount(self, order_amount: float) -> dict:
         """Tính toán số tiền giảm giá"""
         if order_amount < self.minimum_order_amount:
             return {
                 "can_apply": False,
-                "reason": f"Đơn hàng tối thiểu ${self.minimum_order_amount}",
+                "reason": f"Minimum order amount is ${self.minimum_order_amount}",
                 "discount_amount": 0
             }
         

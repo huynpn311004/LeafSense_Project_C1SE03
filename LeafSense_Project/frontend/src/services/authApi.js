@@ -26,7 +26,19 @@ api.interceptors.response.use(
       
       // Nếu là lỗi tài khoản bị khóa
       if (errorDetail && errorDetail.includes('khóa')) {
-        // Clear localStorage và chuyển đến trang account-locked
+        // Get user ID before clearing user data
+        const userStr = localStorage.getItem('user');
+        let userId = null;
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            userId = user?.id;
+          } catch (error) {
+            // Ignore error
+          }
+        }
+        
+        // Chỉ clear authentication data, cart được lưu trong database
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/account-locked';
@@ -36,6 +48,19 @@ api.interceptors.response.use(
     
     // Nếu token hết hạn hoặc không hợp lệ
     if (error.response && error.response.status === 401) {
+      // Get user ID before clearing user data
+      const userStr = localStorage.getItem('user');
+      let userId = null;
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          userId = user?.id;
+        } catch (error) {
+          // Ignore error
+        }
+      }
+      
+      // Chỉ clear authentication data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
@@ -91,8 +116,10 @@ export const authService = {
 
   // Đăng xuất
   logout: () => {
+    // Chỉ xóa authentication data, cart sẽ được lưu trong database
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
     window.location.href = '/login';
   },
 

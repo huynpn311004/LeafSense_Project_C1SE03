@@ -35,7 +35,7 @@ def validate_coupon(
     if not coupon:
         return CouponApplyResponse(
             valid=False,
-            message="Mã giảm giá không tồn tại"
+            message="Coupon code does not exist"
         )
     
     # Kiểm tra tính hợp lệ
@@ -56,7 +56,7 @@ def validate_coupon(
         if user_usage_count >= coupon.usage_limit_per_customer:
             return CouponApplyResponse(
                 valid=False,
-                message=f"Bạn đã sử dụng hết lượt áp dụng mã này (tối đa {coupon.usage_limit_per_customer} lần)"
+                message=f"You have used up all attempts for this coupon (maximum {coupon.usage_limit_per_customer} times)"
             )
     
     # Tính toán discount
@@ -70,7 +70,7 @@ def validate_coupon(
     
     return CouponApplyResponse(
         valid=True,
-        message="Áp dụng mã giảm giá thành công",
+        message="Coupon applied successfully",
         discount_amount=discount_info["discount_amount"],
         final_amount=discount_info["final_amount"],
         coupon=CouponResponse.from_orm(coupon)
@@ -101,7 +101,7 @@ def get_available_coupons(
         # Kiểm tra total usage limit
         if coupon.total_usage_limit and coupon.current_usage_count >= coupon.total_usage_limit:
             can_use = False
-            reason = "Mã giảm giá đã được sử dụng hết"
+            reason = "Coupon has been fully used"
         
         # Kiểm tra user usage limit (nếu user đã đăng nhập)
         elif current_user:
@@ -112,12 +112,12 @@ def get_available_coupons(
             
             if user_usage_count >= coupon.usage_limit_per_customer:
                 can_use = False
-                reason = f"Bạn đã sử dụng hết lượt áp dụng mã này"
+                reason = f"You have used up all attempts for this coupon"
         
         # Kiểm tra minimum order amount (nếu có order_amount)
         elif order_amount is not None and order_amount < coupon.minimum_order_amount:
             can_use = False
-            reason = f"Đơn hàng tối thiểu ${coupon.minimum_order_amount}"
+            reason = f"Minimum order amount is ${coupon.minimum_order_amount}"
         
         result.append(AvailableCouponResponse(
             id=coupon.id,
@@ -164,7 +164,7 @@ def apply_coupon(
     if user_usage_count >= coupon.usage_limit_per_customer:
         raise HTTPException(
             status_code=400, 
-            detail=f"Bạn đã sử dụng hết lượt áp dụng mã này (tối đa {coupon.usage_limit_per_customer} lần)"
+            detail=f"You have used up all attempts for this coupon (maximum {coupon.usage_limit_per_customer} times)"
         )
     
     # Calculate discount
@@ -190,7 +190,7 @@ def apply_coupon(
     db.refresh(usage)
     
     return {
-        "message": "Áp dụng mã giảm giá thành công",
+        "message": "Coupon applied successfully",
         "usage_id": usage.id,
         "discount_amount": discount_info["discount_amount"],
         "final_amount": discount_info["final_amount"]
@@ -316,7 +316,7 @@ def create_coupon_admin(
     # Check if code already exists
     existing_coupon = db.query(Coupon).filter(Coupon.code.ilike(coupon.code)).first()
     if existing_coupon:
-        raise HTTPException(status_code=400, detail="Mã giảm giá đã tồn tại")
+        raise HTTPException(status_code=400, detail="Coupon code already exists")
     
     db_coupon = Coupon(**coupon.dict())
     db.add(db_coupon)

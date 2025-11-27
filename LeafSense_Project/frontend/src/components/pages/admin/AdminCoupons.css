@@ -1,7 +1,7 @@
 .admin-coupons {
   min-height: 100vh;
-  background: #f5f5f5;
-  padding: 20px;
+  background: #f8f9fa;
+  padding: 15px;
   overflow-y: auto;
 }
 
@@ -10,214 +10,209 @@
   justify-content: space-between;
   align-items: center;
   background: white;
-  padding: 20px 30px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 25px;
 }
 
 .admin-header-left h1 {
-  color: #2E7D32;
-  font-size: 28px;
-  font-weight: 700;
+  color: #2c5234;
+  font-size: 26px;
+  font-weight: bold;
   margin: 0 0 5px 0;
 }
 
 .admin-header-left p {
   color: #666;
   margin: 0;
+  font-size: 14px;
 }
 
 .logout-btn {
-  background: #f44336;
+  background: #dc3545;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 4px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
 }
 
 .logout-btn:hover {
-  background: #d32f2f;
+  background: #c82333;
 }
 
 .admin-nav {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  gap: 8px;
+  margin-bottom: 25px;
   background: white;
   padding: 10px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
 }
 
 .nav-btn {
   background: transparent;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  padding: 10px 15px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  color: #666;
+  color: #555;
+  font-size: 14px;
 }
 
 .nav-btn:hover {
-  background: #f0f0f0;
-  color: #2E7D32;
+  background: #e9ecef;
+  color: #2c5234;
 }
 
 .nav-btn.active {
-  background: #2E7D32;
+  background: #2c5234;
   color: white;
 }
 
 .coupons-controls {
   display: flex;
-  gap: 20px;
+  gap: 15px;
   margin-bottom: 20px;
   background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .search-box {
   flex: 1;
+  min-width: 200px;
 }
 
 .search-box input {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
   font-size: 14px;
-  transition: border-color 0.3s ease;
 }
 
 .search-box input:focus {
   outline: none;
-  border-color: #2E7D32;
+  border-color: #2c5234;
 }
 
 .filter-box select {
-  padding: 12px 16px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
   font-size: 14px;
   background: white;
   cursor: pointer;
-  transition: border-color 0.3s ease;
 }
 
 .filter-box select:focus {
   outline: none;
-  border-color: #2E7D32;
+  border-color: #2c5234;
 }
 
 .stats-btn {
-  background: #ff9800;
-  color: white;
+  background: #ffc107;
+  color: #333;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-radius: 5px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
 }
 
 .stats-btn:hover {
-  background: #f57c00;
+  background: #e0a800;
 }
 
 .add-btn {
-  background: #2E7D32;
+  background: #28a745;
   color: white;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-radius: 5px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
 }
 
 .add-btn:hover {
-  background: #1B5E20;
+  background: #218838;
 }
 
 .coupons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-  padding-bottom: 40px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 15px;
+  padding-bottom: 30px;
 }
 
 .coupon-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: transform 0.3s ease;
 }
 
 .coupon-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .coupon-header {
-  background: linear-gradient(135deg, #2E7D32, #4CAF50);
+  background: linear-gradient(135deg, #2c5234, #28a745);
   color: white;
-  padding: 20px;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .coupon-code {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: bold;
   font-family: 'Courier New', monospace;
 }
 
 .coupon-status {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.2);
 }
 
 .coupon-info {
-  padding: 20px;
+  padding: 15px;
 }
 
 .coupon-info h3 {
   color: #333;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
 }
 
 .coupon-description {
   color: #666;
-  font-size: 14px;
-  margin: 0 0 15px 0;
+  font-size: 13px;
+  margin: 0 0 12px 0;
   line-height: 1.4;
 }
 
 .coupon-details {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  padding: 8px 0;
+  margin-bottom: 6px;
+  padding: 6px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -228,58 +223,54 @@
 
 .detail-row .label {
   color: #666;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .detail-row .value {
   color: #333;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .coupon-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .edit-btn {
-  background: #2196f3;
+  background: #007bff;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+  font-size: 13px;
   flex: 1;
 }
 
 .edit-btn:hover {
-  background: #1976d2;
+  background: #0056b3;
 }
 
 .delete-btn {
-  background: #f44336;
+  background: #dc3545;
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s ease;
+  font-size: 13px;
   flex: 1;
 }
 
 .delete-btn:hover {
-  background: #d32f2f;
+  background: #c82333;
 }
 
 .no-data {
   text-align: center;
-  padding: 40px;
-  color: #666;
+  padding: 30px;
+  color: #888;
   grid-column: 1 / -1;
 }
 
@@ -288,18 +279,17 @@
   justify-content: center;
   align-items: center;
   height: 200px;
-  font-size: 18px;
+  font-size: 16px;
   color: #666;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -308,7 +298,7 @@
 
 .modal {
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   width: 90%;
   max-width: 600px;
   max-height: 90vh;

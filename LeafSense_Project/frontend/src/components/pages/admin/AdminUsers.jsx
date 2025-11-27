@@ -40,11 +40,11 @@ const AdminUsers = () => {
 
   const handleToggleStatus = async (userId) => {
     const user = users.find(u => u.id === userId)
-    const action = user?.status === 'active' ? 'khóa' : 'mở khóa'
+    const action = user?.status === 'active' ? 'lock' : 'unlock'
     
     if (user?.status === 'active' && !window.confirm(
-      `Bạn có chắc chắn muốn khóa tài khoản của "${user?.name}"?\n\n` +
-      `User sẽ không thể đăng nhập và sẽ nhận được thông báo liên hệ email hỗ trợ.`
+      `Are you sure you want to lock account of "${user?.name}"?\n\n` +
+      `User will not be able to login and will receive notification to contact support email.`
     )) {
       return
     }
@@ -55,26 +55,26 @@ const AdminUsers = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success(response.data.message || `Đã ${action} tài khoản thành công`)
+      toast.success(response.data.message || `Account ${action}ed successfully`)
       fetchUsers()
     } catch (error) {
       console.error('Error updating user status:', error)
-      toast.error(`${action === 'khóa' ? 'Khóa' : 'Mở khóa'} tài khoản thất bại`)
+      toast.error(`${action === 'lock' ? 'Lock' : 'Unlock'} account failed`)
     }
   }
 
   const handleDeleteUser = async (userId, userName) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa user "${userName}"?`)) {
+    if (window.confirm(`Are you sure you want to delete user "${userName}"?`)) {
       try {
         const token = localStorage.getItem('token')
         await axios.delete(`http://localhost:8000/api/admin/users/${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
-        toast.success('Xóa user thành công')
+        toast.success('User deleted successfully')
         fetchUsers()
       } catch (error) {
         console.error('Error deleting user:', error)
-        toast.error('Xóa user thất bại')
+        toast.error('Failed to delete user')
       }
     }
   }
@@ -83,13 +83,12 @@ const AdminUsers = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
-    toast.success('Đã đăng xuất')
   }
 
   if (loading) {
     return (
       <div className="admin-users">
-        <div className="loading">Đang tải...</div>
+        <div className="loading">Loading...</div>
       </div>
     )
   }
@@ -98,12 +97,12 @@ const AdminUsers = () => {
     <div className="admin-users">
       <div className="admin-header">
         <div className="admin-header-left">
-          <h1>Quản lý Users</h1>
-          <p>Quản lý tài khoản khách hàng</p>
+          <h1>User Management</h1>
+          <p>Manage customer accounts</p>
         </div>
         <div className="admin-header-right">
           <button onClick={handleLogout} className="logout-btn">
-            Đăng xuất
+            Logout
           </button>
         </div>
       </div>
@@ -119,31 +118,43 @@ const AdminUsers = () => {
           className="nav-btn active"
           onClick={() => navigate('/admin/users')}
         >
-          Quản lý Users
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/products')}
-        >
-          Quản lý Sản phẩm
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/orders')}
-        >
-          Quản lý Đơn hàng
+          User Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/categories')}
         >
-          Quản lý Danh mục
+          Category Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/products')}
+        >
+          Product Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/orders')}
+        >
+          Order Management
         </button>
         <button 
           className="nav-btn"
           onClick={() => navigate('/admin/coupons')}
         >
-          Quản lý Mã giảm giá
+          Coupon Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/community')}
+        >
+          Community Management
+        </button>
+        <button 
+          className="nav-btn"
+          onClick={() => navigate('/admin/settings')}
+        >
+          Settings
         </button>
       </div>
 
@@ -151,19 +162,19 @@ const AdminUsers = () => {
         <div className="search-box">
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên hoặc email..."
+            placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="filter-box">
-          <select
+          <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="active">Đang hoạt động</option>
-            <option value="inactive">Đã khóa</option>
+            <option value="">All status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Locked</option>
           </select>
         </div>
       </div>
@@ -173,13 +184,13 @@ const AdminUsers = () => {
           <thead>
             <tr>
               <th>ID</th>
-              <th>Tên</th>
+              <th>Name</th>
               <th>Email</th>
-              <th>Số điện thoại</th>
-              <th>Địa chỉ</th>
-              <th>Trạng thái</th>
-              <th>Ngày tạo</th>
-              <th>Thao tác</th>
+              <th>Phone</th>
+              <th>Address</th>
+              <th>Status</th>
+              <th>Created Date</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -192,23 +203,23 @@ const AdminUsers = () => {
                 <td>{user.address || '-'}</td>
                 <td>
                   <span className={`status-badge ${user.status}`}>
-                    {user.status === 'active' ? 'Hoạt động' : 'Đã khóa'}
+                    {user.status === 'active' ? 'Active' : 'Locked'}
                   </span>
                 </td>
-                <td>{new Date(user.created_at).toLocaleDateString('vi-VN')}</td>
+                <td>{new Date(user.created_at).toLocaleDateString('en-US')}</td>
                 <td>
                   <div className="action-buttons">
                     <button
                       className={`action-btn ${user.status === 'active' ? 'lock' : 'unlock'}`}
                       onClick={() => handleToggleStatus(user.id)}
                     >
-                      {user.status === 'active' ? 'Khóa' : 'Mở khóa'}
+                      {user.status === 'active' ? 'Lock' : 'Unlock'}
                     </button>
                     <button
                       className="action-btn delete"
                       onClick={() => handleDeleteUser(user.id, user.name)}
                     >
-                      Xóa
+                      Delete
                     </button>
                   </div>
                 </td>
@@ -219,7 +230,7 @@ const AdminUsers = () => {
         
         {users.length === 0 && (
           <div className="no-data">
-            <p>Không có user nào</p>
+            <p>No users available</p>
           </div>
         )}
       </div>
