@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Like Feature</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Debug Like Feature</h1>
+    
+    <div class="test-section">
+        <h3>1. Check Authentication</h3>
+        <button onclick="checkAuth()">Check Auth</button>
+        <div id="auth-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Create Test Post</h3>
+        <button onclick="createTestPost()">Create Test Post</button>
+        <div id="create-post-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Get Posts</h3>
+        <button onclick="getPosts()">Get Posts</button>
+        <div id="posts-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Test Like Feature</h3>
+        <input type="number" id="post-id" placeholder="Post ID" value="1">
+        <button onclick="toggleLike()">Toggle Like</button>
+        <button onclick="getReactions()">Get Reactions</button>
+        <button onclick="getMyReaction()">Get My Reaction</button>
+        <div id="like-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/community';
+        
+        function getToken() {
+            return localStorage.getItem('token') || localStorage.getItem('access_token');
+        }
+        
+        function getHeaders() {
+            const token = getToken();
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+        
+        function log(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
+        }
+        
+        async function checkAuth() {
+            try {
+                const token = getToken();
+                log('auth-result', `Token exists: ${!!token}`);
+                
+                if (!token) {
+                    log('auth-result', 'No token found. Please login first.', true);
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/debug/auth`, {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('auth-result', `✅ Auth successful: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log('auth-result', `❌ Auth failed: ${response.status} - ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log('auth-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function createTestPost() {
+            try {
+                const response = await fetch(`${API_BASE}/debug/create-test-post`, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('create-post-result', `✅ Test post created: ${JSON.stringify(data, null, 2)}`);
+                    document.getElementById('post-id').value = data.post_id;
+                } else {
+                    log('create-post-result', `❌ Failed: ${response.status} - ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log('create-post-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function getPosts() {
+            try {
+                const response = await fetch(`${API_BASE}/posts`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('posts-result', `✅ Posts loaded: ${data.posts?.length || 0} posts\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log('posts-result', `❌ Failed: ${response.status} - ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log('posts-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function toggleLike() {
+            try {
+                const postId = document.getElementById('post-id').value;
+                const response = await fetch(`${API_BASE}/posts/${postId}/reactions?reaction_type=like`, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('like-result', `✅ Like toggle successful: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log('like-result', `❌ Like failed: ${response.status} - ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log('like-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function getReactions() {
+            try {
+                const postId = document.getElementById('post-id').value;
+                const response = await fetch(`${API_BASE}/posts/${postId}/reactions`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('like-result', `✅ Reactions: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log('like-result', `❌ Failed: ${response.status} - ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log('like-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function getMyReaction() {
+            try {
+                const postId = document.getElementById('post-id').value;
+                const response = await fetch(`${API_BASE}/posts/${postId}/reactions/me`, {
+                    headers: getHeaders()
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('like-result', `✅ My reaction: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    log('like-result', `❌ Failed: ${response.status} - ${await response.text()}`, true);
+                }
+            } catch (error) {
+                log('like-result', `❌ Error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

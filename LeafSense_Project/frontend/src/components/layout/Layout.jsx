@@ -12,6 +12,7 @@ const Layout = ({ children }) => {
     const name = params.get('name');
     const avatar_url = params.get('avatar_url');
     const user_id = params.get('user_id');
+    const role = params.get('role');
 
     if (token && email) {
       const decodedToken = decodeURIComponent(token);
@@ -20,23 +21,34 @@ const Layout = ({ children }) => {
         id: user_id ? parseInt(user_id) : undefined,
         email, 
         name, 
-        avatar: avatar_url 
+        avatar: avatar_url,
+        role: role || 'farmer'
       }));
 
-      // Xóa query string khỏi URL cho gọn
-      window.history.replaceState({}, document.title, '/');
+      // Xóa query string khỏi URL nhưng giữ nguyên path hiện tại
+      window.history.replaceState({}, document.title, location.pathname);
+      
+      // Redirect admin to admin dashboard
+      if (role === 'admin') {
+        navigate('/admin/dashboard');
+      }
     }
-  }, [location]);
+  }, [location, navigate]);
   
   // User info state
-  const [userInfo, setUserInfo] = useState({
-    name: '',
-    email: '',
-    avatar: null
+  const [userInfo, setUserInfo] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser
+      ? JSON.parse(savedUser)
+      : {
+          name: '',
+          email: '',
+          avatar: null
+        };
   });
 
   const menuItems = [
-    { id: 'Dashboard', label: 'Dashboard', icon: 'grid', path: '/' },
+    { id: 'Dashboard', label: 'Dashboard', icon: 'grid', path: '/dashboard' },
     { id: 'Upload', label: 'Upload', icon: 'upload', path: '/upload' },
     { id: 'History', label: 'History', icon: 'history', path: '/history' },
     { id: 'Marketplace', label: 'Marketplace', icon: 'shopping', path: '/marketplace' },
@@ -50,7 +62,7 @@ const Layout = ({ children }) => {
   const getCurrentPage = () => {
     const path = location.pathname;
     switch (path) {
-      case '/': return 'Dashboard';
+      case '/dashboard': return 'Dashboard';
       case '/upload': return 'Upload';
       case '/history': return 'History';
       case '/marketplace': return 'Marketplace';
@@ -72,13 +84,6 @@ const Layout = ({ children }) => {
 
   // Load user info from localStorage on component mount
   useEffect(() => {
-    // Load dữ liệu từ localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setUserInfo(userData);
-    }
-
     // Load fresh data từ API
     setTimeout(() => {
       loadUserProfileFromAPI();
@@ -163,8 +168,32 @@ const Layout = ({ children }) => {
   };
 
   const handleLogout = () => {
+    // Get user ID before clearing user data
+    const userStr = localStorage.getItem('user');
+    let userId = null;
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        userId = user?.id;
+      } catch (error) {
+        console.error('Error parsing user data on logout:', error);
+      }
+    }
+    
+    // Clear user-specific cart if user ID exists
+    if (userId) {
+      localStorage.removeItem(`marketplaceCart_${userId}`);
+    }
+    
+    // Clear guest cart
+    localStorage.removeItem('marketplaceCart_guest');
+    
+    // Clear general data
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('checkoutCart');
+    localStorage.removeItem('checkoutCoupon');
+    
     navigate('/login');
   };
 

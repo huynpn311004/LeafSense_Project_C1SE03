@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-"""
-Script để tạo tài khoản admin
-"""
-
 import sys
 import os
 import hashlib

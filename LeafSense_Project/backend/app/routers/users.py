@@ -5,14 +5,9 @@ from app.models.users import User
 from app.schemas.user_schema import UserResponse, ChangePassword
 from core.security import get_current_user, verify_password, get_password_hash
 from sqlalchemy.exc import SQLAlchemyError
-import os
-import uuid
+from app.services.firebase_service import upload_file_to_firebase
 
 router = APIRouter()
-
-# Tạo thư mục uploads nếu chưa có
-UPLOAD_DIR = "uploads/avatars"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 @router.get("/profile", response_model=UserResponse)
@@ -43,15 +38,6 @@ async def update_user_profile(
     # Xử lý avatar
     if remove_avatar == "true":
         # Xóa avatar hiện tại
-        if current_user.avatar_url:
-            try:
-                # Xóa file cũ nếu có
-                old_file_path = current_user.avatar_url.replace("/uploads/avatars/", "")
-                full_old_path = os.path.join(UPLOAD_DIR, old_file_path)
-                if os.path.exists(full_old_path):
-                    os.remove(full_old_path)
-            except Exception:
-                pass  # Ignore errors when deleting old files
         current_user.avatar_url = None
         
     elif avatar:
@@ -62,39 +48,22 @@ async def update_user_profile(
                 detail="File must be an image"
             )
 
-        # Xóa avatar cũ nếu có
-        if current_user.avatar_url:
-            try:
-                old_file_path = current_user.avatar_url.replace("/uploads/avatars/", "")
-                full_old_path = os.path.join(UPLOAD_DIR, old_file_path)
-                if os.path.exists(full_old_path):
-                    os.remove(full_old_path)
-            except Exception:
-                pass  # Ignore errors when deleting old files
-
-        # Tạo tên file unique
-        file_extension = os.path.splitext(avatar.filename)[1] or ".jpg"
-        filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, filename)
-
-        # Lưy file với async I/O
+        # Upload avatar lên Firebase
         try:
-            content = await avatar.read()
-            # Sử dụng aiofiles để write async (nếu có) hoặc thread pool
-            import asyncio
+            avatar_url = await upload_file_to_firebase(
+                file=avatar,
+                folder="avatars",
+                filename_prefix=f"avatar_{current_user.id}_"
+            )
             
-            def write_file(path, content):
-                with open(path, "wb") as buffer:
-                    buffer.write(content)
+            # Cập nhật avatar_url với URL từ Firebase
+            current_user.avatar_url = avatar_url
             
-            # Write file in thread pool to avoid blocking
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, write_file, file_path, content)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Could not save avatar: {e}")
-
-        # Cập nhật avatar_url
-        current_user.avatar_url = f"/uploads/avatars/{filename}"
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload avatar to Firebase: {str(e)}"
+            )
 
     try:
         db.commit()

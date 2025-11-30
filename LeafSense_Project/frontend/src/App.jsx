@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import Dashboard from './components/pages/Dashboard'
 import UploadPage from './components/pages/UploadPage'
@@ -11,6 +11,7 @@ import SettingsPage from './components/pages/SettingsPage'
 import CommunityPage from './components/pages/CommunityPage'
 import CheckoutPage from './components/pages/CheckoutPage'
 import CartPage from './components/pages/CartPage'
+import LandingPage from './components/pages/LandingPage'
 import Login from './components/pages/Login'
 import Signup from './components/pages/Signup'
 import ForgotPassword from './components/pages/ForgotPassword'
@@ -23,8 +24,11 @@ import AdminProducts from './components/pages/admin/AdminProducts'
 import AdminOrders from './components/pages/admin/AdminOrders'
 import AdminCategories from './components/pages/admin/AdminCategories'
 import AdminCoupons from './components/pages/admin/AdminCoupons'
+import AdminCommunity from './components/pages/admin/AdminCommunity'
+import AdminStatistics from './components/pages/admin/AdminStatistics'
 import AdminSettings from './components/pages/admin/AdminSettings'
 import AdminAuthGuard from './components/AdminAuthGuard'
+import AdminLayout from './components/layout/AdminLayout'
 import './App.css'
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -42,44 +46,26 @@ function App() {
           
           {/* Admin pages - redirect to main login */}
           <Route path="/admin/login" element={<Login />} />
-          <Route path="/admin/dashboard" element={
+          <Route path="/admin" element={
             <AdminAuthGuard>
-              <AdminDashboard />
+              <AdminLayout />
             </AdminAuthGuard>
-          } />
-          <Route path="/admin/users" element={
-            <AdminAuthGuard>
-              <AdminUsers />
-            </AdminAuthGuard>
-          } />
-          <Route path="/admin/products" element={
-            <AdminAuthGuard>
-              <AdminProducts />
-            </AdminAuthGuard>
-          } />
-          <Route path="/admin/orders" element={
-            <AdminAuthGuard>
-              <AdminOrders />
-            </AdminAuthGuard>
-          } />
-          <Route path="/admin/categories" element={
-            <AdminAuthGuard>
-              <AdminCategories />
-            </AdminAuthGuard>
-          } />
-          <Route path="/admin/coupons" element={
-            <AdminAuthGuard>
-              <AdminCoupons />
-            </AdminAuthGuard>
-          } />
-          <Route path="/admin/settings" element={
-            <AdminAuthGuard>
-              <AdminSettings />
-            </AdminAuthGuard>
-          } />
+          }>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="categories" element={<AdminCategories />} />
+            <Route path="coupons" element={<AdminCoupons />} />
+            <Route path="community" element={<AdminCommunity />} />
+            <Route path="statistics" element={<AdminStatistics />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
           
           {/* Main pages */}
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />

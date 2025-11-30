@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import Layout from '../layout/Layout'
+import { useAuth } from '../../contexts/AuthContext'
+import { communityApi, commentsApi, reactionsApi, communityUtils } from '../../services/communityApi'
 import './CommunityPage.css'
 
 const CommunityPage = () => {
+  // ===== CONTEXT =====
+  const { user, isAuthenticated } = useAuth()
+
   // ===== STATE MANAGEMENT =====
   const [posts, setPosts] = useState([])
   const [newPost, setNewPost] = useState({
+    title: '',
     content: '',
     image: null,
     imagePreview: null
@@ -13,164 +19,154 @@ const CommunityPage = () => {
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [selectedPost, setSelectedPost] = useState(null)
   const [showComments, setShowComments] = useState(false)
-  const [newComment, setNewComment] = useState('')
+  const [postComments, setPostComments] = useState({}) // Object để lưu comment cho từng post
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [pagination, setPagination] = useState({
+    skip: 0,
+    limit: 10,
+    total: 0,
+    hasMore: false
+  })
 
-  // ===== SAMPLE DATA - THAY ĐỔI DỮ LIỆU THẬT TẠI ĐÂY =====
+  // ===== FETCH POSTS =====
   useEffect(() => {
-    // THAY ĐỔI API CALL CỦA BẠN TẠI ĐÂY
-    const fetchPosts = async () => {
-      try {
-        setIsLoading(true)
-        
-        // API CALL - THAY ĐỔI URL CỦA BẠN
-        const response = await fetch('/api/community/posts', { // <-- Thay URL API
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            // Thêm headers khác nếu cần:
-            // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch posts')
-        }
-
-        const data = await response.json()
-        
-        // MAPPING DỮ LIỆU API - ĐIỀU CHỈNH NẾU CẤU TRÚC KHÁC
-        setPosts(data.posts || data) // <-- Điều chỉnh tên trường
-        
-      } catch (error) {
-        console.error('Error fetching posts:', error)
-        
-        // FALLBACK DATA - XÓA KHI TÍCH HỢP API THẬT
-        setPosts([
-          {
-            id: 1,
-            author: {
-              name: 'Nguyễn Văn A',
-              avatar: 'https://via.placeholder.com/40',
-              role: 'Nông dân'
-            },
-            content: 'Hôm nay thu hoạch được rất nhiều rau xanh tươi ngon! Cảm ơn hệ thống LeafSense đã giúp tôi chăm sóc cây trồng tốt hơn. 🌱',
-            image: 'https://via.placeholder.com/400x300',
-            timestamp: '2024-01-15T10:30:00Z',
-            likes: {
-              total: 24,
-              reactions: {
-                heart: 15,
-                laugh: 5,
-                like: 4
-              }
-            },
-            comments: [
-              {
-                id: 1,
-                author: {
-                  name: 'Trần Thị B',
-                  avatar: 'https://via.placeholder.com/30'
-                },
-                content: 'Chúc mừng bạn! Rau trông rất tươi ngon.',
-                timestamp: '2024-01-15T11:00:00Z'
-              },
-              {
-                id: 2,
-                author: {
-                  name: 'Lê Văn C',
-                  avatar: 'https://via.placeholder.com/30'
-                },
-                content: 'Bạn có thể chia sẻ kinh nghiệm chăm sóc không?',
-                timestamp: '2024-01-15T11:30:00Z'
-              }
-            ]
-          },
-          {
-            id: 2,
-            author: {
-              name: 'Phạm Thị D',
-              avatar: 'https://via.placeholder.com/40',
-              role: 'Chuyên gia nông nghiệp'
-            },
-            content: 'Mẹo nhỏ: Sử dụng phân hữu cơ sẽ giúp cây trồng phát triển tốt hơn và an toàn cho sức khỏe. Hãy thử áp dụng nhé!',
-            image: null,
-            timestamp: '2024-01-14T15:45:00Z',
-            likes: {
-              total: 18,
-              reactions: {
-                heart: 8,
-                laugh: 2,
-                like: 8
-              }
-            },
-            comments: [
-              {
-                id: 3,
-                author: {
-                  name: 'Hoàng Văn E',
-                  avatar: 'https://via.placeholder.com/30'
-                },
-                content: 'Cảm ơn chị đã chia sẻ! Tôi sẽ thử áp dụng.',
-                timestamp: '2024-01-14T16:00:00Z'
-              }
-            ]
-          }
-        ])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchPosts()
   }, [])
 
+  // ===== RELOAD REACTIONS WHEN AUTH CHANGES =====
+  useEffect(() => {
+    // Reload reaction data when authentication status changes
+    if (posts.length > 0) {
+      posts.forEach(post => {
+        reloadPostReactions(post.id)
+      })
+    }
+  }, [isAuthenticated])
+
+  const fetchPosts = async (loadMore = false) => {
+    try {
+      setIsLoading(true)
+      setError('')
+      
+      const skip = loadMore ? pagination.skip + pagination.limit : 0
+      
+      const response = await communityApi.getPosts({
+        skip,
+        limit: pagination.limit,
+        status: 'published'
+      })
+      
+      // Load reaction data for each post (comments sẽ load on demand)
+      let postsWithReactions = response.posts
+      if (response.posts.length > 0) {
+        postsWithReactions = await Promise.all(response.posts.map(async (post) => {
+          try {
+            // Always get reaction counts (public data)
+            const reactionsResponse = await reactionsApi.getPostReactions(post.id)
+            
+            // Get user's reaction only if authenticated
+            let userReaction = { liked: false }
+            if (isAuthenticated) {
+              userReaction = await reactionsApi.getMyReaction(post.id)
+            }
+
+            // Initialize comments with count from backend or empty array
+            const comments = post.comments || []
+            
+            return {
+              ...post,
+              like_count: reactionsResponse.reactions.like || 0,
+              liked: userReaction.liked || false,
+              comments: comments,
+              comment_count: post.comment_count || comments.length || 0
+            }
+          } catch (error) {
+            // If loading fails, just return post without additional data
+            console.error('Error loading data for post', post.id, error)
+            return {
+              ...post,
+              like_count: 0,
+              liked: false,
+              comments: post.comments || [],
+              comment_count: post.comment_count || 0
+            }
+          }
+        }))
+      }
+      
+      setPosts(prev => loadMore ? [...prev, ...postsWithReactions] : postsWithReactions)
+      setPagination({
+        skip,
+        limit: pagination.limit,
+        total: response.total,
+        hasMore: response.has_more
+      })
+      
+    } catch (error) {
+      console.error('Error fetching posts:', error)
+      setError('Không thể tải bài viết. Vui lòng thử lại!')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // ===== POST CREATION FUNCTIONS =====
   const handleCreatePost = async () => {
-    if (!newPost.content.trim()) return
+    if (!newPost.title.trim() || !newPost.content.trim()) {
+      setError('Vui lòng nhập tiêu đề và nội dung bài viết')
+      return
+    }
+
+    // Kiểm tra authentication trước
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token')
+    if (!token) {
+      setError('Bạn cần đăng nhập để tạo bài viết. Token không tồn tại.')
+      return
+    }
+
+    if (!isAuthenticated) {
+      setError('Bạn cần đăng nhập để tạo bài viết. Authentication state: false')
+      return
+    }
 
     try {
       setIsLoading(true)
+      setError('')
       
-      // TẠO FORM DATA CHO UPLOAD HÌNH ẢNH
-      const formData = new FormData()
-      formData.append('content', newPost.content)
+      // Validate image nếu có
       if (newPost.image) {
-        formData.append('image', newPost.image)
+        communityUtils.validateImage(newPost.image)
       }
-      // Thêm các trường khác nếu cần:
-      // formData.append('user_id', currentUser.id)
-      // formData.append('category', 'general')
-
-      // API CALL - THAY ĐỔI URL CỦA BẠN
-      const response = await fetch('/api/community/posts', { // <-- Thay URL API
-        method: 'POST',
-        headers: {
-          // Không cần Content-Type khi dùng FormData
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create post')
-      }
-
-      const data = await response.json()
       
-      // MAPPING DỮ LIỆU API - ĐIỀU CHỈNH NẾU CẤU TRÚC KHÁC
-      const newPostData = data.post || data // <-- Điều chỉnh tên trường
+      console.log('🔄 Creating post with token:', token ? 'EXISTS' : 'NOT FOUND')
+      
+      const response = await communityApi.createPost({
+        title: newPost.title,
+        content: newPost.content,
+        image: newPost.image,
+        status: 'published'
+      })
+      
+      console.log('✅ Post created successfully:', response)
       
       // Thêm bài viết mới vào đầu danh sách
-      setPosts(prev => [newPostData, ...prev])
+      setPosts(prev => [response, ...prev])
+      setPagination(prev => ({ ...prev, total: prev.total + 1 }))
       
       // Reset form
-      setNewPost({ content: '', image: null, imagePreview: null })
+      setNewPost({ title: '', content: '', image: null, imagePreview: null })
       setShowCreatePost(false)
       
     } catch (error) {
-      console.error('Error creating post:', error)
-      alert('Không thể tạo bài viết. Vui lòng thử lại!')
+      console.error('❌ Error creating post:', error)
+      
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+        // Có thể thêm logic logout ở đây
+      } else {
+        setError(error.message || 'Không thể tạo bài viết. Vui lòng thử lại!')
+      }
     } finally {
       setIsLoading(false)
     }
@@ -179,167 +175,228 @@ const CommunityPage = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      setNewPost(prev => ({
-        ...prev,
-        image: file,
-        imagePreview: URL.createObjectURL(file)
-      }))
-    }
-  }
-
-  // ===== LIKE FUNCTIONS =====
-  const handleLike = async (postId) => {
-    try {
-      // API CALL - THAY ĐỔI URL CỦA BẠN
-      const response = await fetch(`/api/community/posts/${postId}/like`, { // <-- Thay URL API
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          // user_id: currentUser.id
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to like post')
+      try {
+        communityUtils.validateImage(file)
+        setNewPost(prev => ({
+          ...prev,
+          image: file,
+          imagePreview: URL.createObjectURL(file)
+        }))
+        setError('')
+      } catch (error) {
+        setError(error.message)
       }
-
-      const data = await response.json()
-      
-      // Cập nhật state local
-      setPosts(prev => prev.map(post => 
-        post.id === postId 
-          ? {
-              ...post,
-              likes: data.likes || post.likes
-            }
-          : post
-      ))
-      
-    } catch (error) {
-      console.error('Error liking post:', error)
-      // Fallback: Cập nhật local state
-      setPosts(prev => prev.map(post => 
-        post.id === postId 
-          ? {
-              ...post,
-              likes: {
-                ...post.likes,
-                total: post.likes.total + 1,
-                reactions: {
-                  ...post.likes.reactions,
-                  like: (post.likes.reactions.like || 0) + 1
-                }
-              }
-            }
-          : post
-      ))
     }
   }
 
   // ===== COMMENT FUNCTIONS =====
   const handleAddComment = async (postId) => {
-    if (!newComment.trim()) return
+    const commentText = postComments[postId] || ''
+    if (!commentText.trim()) return
+
+    if (!isAuthenticated) {
+      setError('Bạn cần đăng nhập để bình luận')
+      return
+    }
 
     try {
-      // API CALL - THAY ĐỔI URL CỦA BẠN
-      const response = await fetch(`/api/community/posts/${postId}/comments`, { // <-- Thay URL API
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          content: newComment,
-          // user_id: currentUser.id,
-          // post_id: postId
-        })
+      const response = await commentsApi.createComment(postId, {
+        content: commentText
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to add comment')
-      }
-
-      const data = await response.json()
       
       // Cập nhật state local
       setPosts(prev => prev.map(post => 
         post.id === postId 
           ? {
               ...post,
-              comments: [...post.comments, data.comment || data]
+              comments: [...(post.comments || []), response],
+              comment_count: (post.comment_count || post.comments?.length || 0) + 1
             }
           : post
       ))
+
+      // Cập nhật selectedPost nếu đang xem chi tiết post này
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost(prev => ({
+          ...prev,
+          comments: [...(prev.comments || []), response]
+        }))
+      }
       
-      setNewComment('')
+      // Clear comment cho post này
+      setPostComments(prev => ({ ...prev, [postId]: '' }))
+      setError('')
       
     } catch (error) {
       console.error('Error adding comment:', error)
-      // Fallback: Thêm comment local
-      const newCommentData = {
-        id: Date.now(),
-        author: {
-          name: 'Bạn', // Thay bằng tên user thật
-          avatar: 'https://via.placeholder.com/30'
-        },
-        content: newComment,
-        timestamp: new Date().toISOString()
-      }
+      setError(error.message || 'Không thể thêm bình luận')
+    }
+  }
+
+  const handleDeleteComment = async (postId, commentId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bình luận này?')) {
+      return
+    }
+
+    try {
+      await commentsApi.deleteComment(commentId)
       
+      // Cập nhật posts
       setPosts(prev => prev.map(post => 
         post.id === postId 
           ? {
               ...post,
-              comments: [...post.comments, newCommentData]
+              comments: (post.comments || []).filter(comment => comment.id !== commentId),
+              comment_count: Math.max(0, (post.comment_count || post.comments?.length || 0) - 1)
             }
           : post
       ))
+
+      // Cập nhật selectedPost nếu đang xem chi tiết
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost(prev => ({
+          ...prev,
+          comments: (prev.comments || []).filter(comment => comment.id !== commentId)
+        }))
+      }
       
-      setNewComment('')
+      setError('') // Clear any errors
+      
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+      setError(error.message || 'Không thể xóa bình luận')
     }
   }
 
-  const openCommentsModal = (post) => {
-    setSelectedPost(post)
-    setShowComments(true)
+  const loadPostComments = async (post) => {
+    try {
+      const comments = await commentsApi.getComments(post.id)
+      setSelectedPost({
+        ...post,
+        comments: comments || []
+      })
+      setShowComments(true)
+    } catch (error) {
+      console.error('Error loading comments:', error)
+      setSelectedPost({
+        ...post,
+        comments: post.comments || []
+      })
+      setShowComments(true)
+    }
+  }
+
+  // ===== HELPER FUNCTIONS =====
+  const closeCommentsModal = () => {
+    setShowComments(false)
+    // Clear comment input cho modal này nếu có selectedPost
+    if (selectedPost) {
+      setPostComments(prev => ({ ...prev, [selectedPost.id]: '' }))
+    }
+  }
+
+  // ===== REACTION FUNCTIONS =====
+  const reloadPostReactions = async (postId) => {
+    try {
+      const reactionsResponse = await reactionsApi.getPostReactions(postId)
+      let userReaction = { liked: false }
+      
+      if (isAuthenticated) {
+        userReaction = await reactionsApi.getMyReaction(postId)
+      }
+      
+      // Cập nhật posts với reaction data mới
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              liked: userReaction.liked || false,
+              like_count: reactionsResponse.reactions.like || 0
+            }
+          : post
+      ))
+
+      // Cập nhật selectedPost nếu đang xem chi tiết
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost(prev => ({
+          ...prev,
+          liked: userReaction.liked || false,
+          like_count: reactionsResponse.reactions.like || 0
+        }))
+      }
+    } catch (error) {
+      console.error('Error reloading reactions:', error)
+    }
+  }
+
+  const handleReaction = async (postId) => {
+    if (!isAuthenticated) {
+      setError('Bạn cần đăng nhập để thích bài viết')
+      return
+    }
+
+    try {
+      const response = await reactionsApi.toggleReaction(postId, 'like')
+      
+      // Reload actual reaction data from server để đảm bảo tính chính xác
+      await reloadPostReactions(postId)
+
+      setError('') // Clear any previous errors
+
+    } catch (error) {
+      console.error('Error toggling reaction:', error)
+      setError('Không thể thích bài viết. Vui lòng thử lại!')
+    }
   }
 
   // ===== UTILITY FUNCTIONS =====
   const formatTimeAgo = (timestamp) => {
-    const now = new Date()
-    const postTime = new Date(timestamp)
-    const diffInMinutes = Math.floor((now - postTime) / (1000 * 60))
-    
-    if (diffInMinutes < 1) return 'Vừa xong'
-    if (diffInMinutes < 60) return `${diffInMinutes} phút trước`
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} giờ trước`
-    return `${Math.floor(diffInMinutes / 1440)} ngày trước`
+    return communityUtils.formatTimeAgo(timestamp)
+  }
+
+  const getImageUrl = (imagePath) => {
+    return communityUtils.getImageUrl(imagePath)
+  }
+
+  const getUserAvatar = (user) => {
+    return user?.avatar_url || communityUtils.getImageUrl(user?.avatar_url) || 'https://via.placeholder.com/40'
   }
 
   // ===== RENDER MAIN CONTENT =====
   return (
     <Layout>
       <div className="community-page">
-        {/* HEADER */}
-        <div className="community-header">
-          <h1>Cộng Đồng</h1>
-          <p>Chia sẻ kinh nghiệm và kết nối với cộng đồng nông dân</p>
-        </div>
-
         {/* CREATE POST BUTTON */}
-        <div className="create-post-section">
-          <button 
-            className="create-post-btn"
-            onClick={() => setShowCreatePost(true)}
-            title="Tạo bài viết mới để chia sẻ với cộng đồng"
-          >
-            <span className="create-icon">✏️</span>
-            Tạo bài viết mới
-          </button>
-        </div>
+        {isAuthenticated ? (
+          <div className="create-post-section">
+            <button 
+              className="create-post-btn"
+              onClick={() => setShowCreatePost(true)}
+              title="Tạo bài viết mới để chia sẻ với cộng đồng"
+            >
+              <span className="create-icon">✏️</span>
+              Tạo bài viết mới
+            </button>
+          </div>
+        ) : (
+          <div className="auth-info">
+            <p>Đăng nhập để tạo bài viết và tham gia cộng đồng</p>
+          </div>
+        )}
+
+        {/* ERROR MESSAGE */}
+        {error && (
+          <div className="error-message">
+            <span className="error-icon">⚠️</span>
+            {error}
+            <button 
+              className="close-error"
+              onClick={() => setError('')}
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* CREATE POST MODAL */}
         {showCreatePost && (
@@ -356,6 +413,15 @@ const CommunityPage = () => {
               </div>
               
               <div className="modal-content">
+                {/* TITLE INPUT */}
+                <input
+                  className="post-title-input"
+                  placeholder="Tiêu đề bài viết..."
+                  value={newPost.title}
+                  onChange={(e) => setNewPost(prev => ({ ...prev, title: e.target.value }))}
+                />
+                
+                {/* CONTENT TEXTAREA */}
                 <textarea
                   className="post-textarea"
                   placeholder="Chia sẻ điều gì đó với cộng đồng..."
@@ -397,7 +463,7 @@ const CommunityPage = () => {
                     <button 
                       className="post-btn"
                       onClick={handleCreatePost}
-                      disabled={!newPost.content.trim() || isLoading}
+                      disabled={!newPost.title.trim() || !newPost.content.trim() || isLoading}
                     >
                       {isLoading ? 'Đang đăng...' : 'Đăng bài'}
                     </button>
@@ -412,127 +478,205 @@ const CommunityPage = () => {
         <div className="posts-container">
           {isLoading && posts.length === 0 ? (
             <div className="loading">Đang tải bài viết...</div>
+          ) : posts.length === 0 ? (
+            <div className="no-posts">
+              <p>Chưa có bài viết nào.</p>
+              {isAuthenticated && (
+                <button 
+                  className="create-first-post-btn"
+                  onClick={() => setShowCreatePost(true)}
+                >
+                  Tạo bài viết đầu tiên
+                </button>
+              )}
+            </div>
           ) : (
-            posts.map(post => (
-              <div key={post.id} className="post-card">
-                {/* POST HEADER */}
-                <div className="post-header">
-                  <div className="author-info">
-                    <img 
-                      src={post.author.avatar} 
-                      alt={post.author.name}
-                      className="author-avatar"
-                    />
-                    <div className="author-details">
-                      <h4 className="author-name">{post.author.name}</h4>
-                      <p className="author-role">{post.author.role}</p>
-                      <span className="post-time">{formatTimeAgo(post.timestamp)}</span>
+            <>
+              {posts.map(post => (
+                <div key={post.id} className="post-card">
+                  {/* POST HEADER */}
+                  <div className="post-header">
+                    <div className="author-info">
+                      <img 
+                        src={getUserAvatar(post.user)} 
+                        alt={post.user?.name || 'User'}
+                        className="author-avatar"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/40'
+                        }}
+                      />
+                      <div className="author-details">
+                        <h4 className="author-name">{post.user?.name || 'Anonymous'}</h4>
+                        <p className="author-role">{post.user?.role || 'Thành viên'}</p>
+                        <span className="post-time">{formatTimeAgo(post.created_at)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* POST CONTENT */}
-                <div className="post-content">
-                  <p>{post.content}</p>
-                  {post.image && (
-                    <img src={post.image} alt="Post" className="post-image" />
-                  )}
-                </div>
+                  {/* POST CONTENT */}
+                  <div className="post-content">
+                    <h3 className="post-title">{post.title}</h3>
+                    <p className="post-text">{post.content}</p>
+                    {post.image_url && (
+                      <img 
+                        src={getImageUrl(post.image_url)} 
+                        alt="Post" 
+                        className="post-image"
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                        }}
+                      />
+                    )}
+                  </div>
 
-                {/* POST ACTIONS */}
-                <div className="post-actions">
-                  <div className="reactions">
+                  {/* POST ACTIONS */}
+                  <div className="post-actions">
+                    <div className="reactions">
+                      <button 
+                        className={`reaction-btn ${post.liked ? 'liked' : ''}`}
+                        onClick={() => handleReaction(post.id)}
+                        title={post.liked ? "Bỏ thích" : "Thích"}
+                      >
+                        ❤️ {post.like_count || 0}
+                      </button>
+                    </div>
                     <button 
-                      className={`reaction-btn like ${post.likes.reactions.like > 0 ? 'active' : ''}`}
-                      onClick={() => handleLike(post.id)}
-                      title="Thích"
+                      className="comment-btn"
+                      onClick={() => loadPostComments(post)}
+                      title="Xem bình luận"
                     >
-                      👍 {post.likes.reactions.like || 0}
+                      💬 {post.comment_count || post.comments?.length || 0} bình luận
                     </button>
                   </div>
-                  
-                  <button 
-                    className="comment-btn"
-                    onClick={() => openCommentsModal(post)}
-                    title="Xem bình luận"
-                  >
-                    💬 {post.comments.length} bình luận
-                  </button>
-                </div>
 
-                {/* QUICK COMMENT */}
-                <div className="quick-comment">
-                  <input
-                    type="text"
-                    placeholder="Viết bình luận..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                  />
+                  {/* QUICK COMMENT */}
+                  {isAuthenticated && (
+                    <div className="quick-comment">
+                      <input
+                        type="text"
+                        placeholder="Viết bình luận..."
+                        value={postComments[post.id] || ''}
+                        onChange={(e) => setPostComments(prev => ({ ...prev, [post.id]: e.target.value }))}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                      />
+                      <button 
+                        className="send-comment-btn"
+                        onClick={() => handleAddComment(post.id)}
+                        disabled={!(postComments[post.id] || '').trim()}
+                        title="Gửi bình luận"
+                      >
+                        Gửi
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {/* LOAD MORE */}
+              {pagination.hasMore && (
+                <div className="load-more-section">
                   <button 
-                    className="send-comment-btn"
-                    onClick={() => handleAddComment(post.id)}
-                    disabled={!newComment.trim()}
-                    title="Gửi bình luận"
+                    className="load-more-btn"
+                    onClick={() => fetchPosts(true)}
+                    disabled={isLoading}
                   >
-                    Gửi
+                    {isLoading ? 'Đang tải...' : 'Xem thêm bài viết'}
                   </button>
                 </div>
-              </div>
-            ))
+              )}
+            </>
           )}
         </div>
 
         {/* COMMENTS MODAL */}
         {showComments && selectedPost && (
-          <div className="modal-overlay" onClick={() => setShowComments(false)}>
+          <div className="modal-overlay" onClick={closeCommentsModal}>
             <div className="comments-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3>Bình luận ({selectedPost.comments.length})</h3>
-                <button 
-                  className="close-btn"
-                  onClick={() => setShowComments(false)}
-                >
-                  ✕
-                </button>
+                <div className="modal-actions">
+                  <button 
+                    className={`reaction-btn ${selectedPost.liked ? 'liked' : ''}`}
+                    onClick={() => handleReaction(selectedPost.id)}
+                    title={selectedPost.liked ? "Bỏ thích" : "Thích"}
+                  >
+                    ❤️ {selectedPost.like_count || 0}
+                  </button>
+                  <button 
+                    className="close-btn"
+                    onClick={closeCommentsModal}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
               
               <div className="comments-list">
-                {selectedPost.comments.map(comment => (
-                  <div key={comment.id} className="comment-item">
-                    <img 
-                      src={comment.author.avatar} 
-                      alt={comment.author.name}
-                      className="comment-avatar"
-                    />
-                    <div className="comment-content">
-                      <div className="comment-header">
-                        <span className="comment-author">{comment.author.name}</span>
-                        <span className="comment-time">{formatTimeAgo(comment.timestamp)}</span>
-                      </div>
-                      <p className="comment-text">{comment.content}</p>
-                    </div>
+                {selectedPost.comments?.length === 0 ? (
+                  <div className="no-comments">
+                    <p>Chưa có bình luận nào.</p>
                   </div>
-                ))}
+                ) : (
+                  selectedPost.comments?.map(comment => (
+                    <div key={comment.id} className="comment-item">
+                      <img 
+                        src={getUserAvatar(comment.user)} 
+                        alt={comment.user?.name || 'User'}
+                        className="comment-avatar"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/36'
+                        }}
+                      />
+                      <div className="comment-content">
+                        <div className="comment-header">
+                          <span className="comment-author">{comment.user?.name || 'Anonymous'}</span>
+                          <span className="comment-time">{formatTimeAgo(comment.created_at)}</span>
+                        </div>
+                        <p className="comment-text">{comment.content}</p>
+                      </div>
+                      {/* DELETE BUTTON - Chỉ hiện nếu là chủ comment hoặc admin */}
+                      {isAuthenticated && user && (
+                        comment.user?.id === user.id || user.role === 'admin'
+                      ) && (
+                        <div className="comment-actions">
+                          <button 
+                            className="delete-comment-btn"
+                            onClick={() => handleDeleteComment(selectedPost.id, comment.id)}
+                            title="Xóa bình luận"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
               
-              <div className="add-comment">
-                <input
-                  type="text"
-                  placeholder="Viết bình luận..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddComment(selectedPost.id)}
-                />
-                <button 
-                  className="send-comment-btn"
-                  onClick={() => handleAddComment(selectedPost.id)}
-                  disabled={!newComment.trim()}
-                  title="Gửi bình luận"
-                >
-                  Gửi
-                </button>
-              </div>
+              {/* ADD COMMENT */}
+              {isAuthenticated ? (
+                <div className="add-comment">
+                  <input
+                    type="text"
+                    placeholder="Viết bình luận..."
+                    value={postComments[selectedPost.id] || ''}
+                    onChange={(e) => setPostComments(prev => ({ ...prev, [selectedPost.id]: e.target.value }))}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddComment(selectedPost.id)}
+                  />
+                  <button 
+                    className="send-comment-btn"
+                    onClick={() => handleAddComment(selectedPost.id)}
+                    disabled={!(postComments[selectedPost.id] || '').trim()}
+                    title="Gửi bình luận"
+                  >
+                    Gửi
+                  </button>
+                </div>
+              ) : (
+                <div className="login-to-comment">
+                  <p>Đăng nhập để bình luận</p>
+                </div>
+              )}
             </div>
           </div>
         )}

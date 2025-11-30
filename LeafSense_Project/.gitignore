@@ -1,0 +1,95 @@
+# Virtual environments
+myvenv_project/
+venv/
+env/
+.venv/
+*.venv
+
+# Environment files
+.env
+*.env
+**/.env
+backend/.env
+
+# Firebase keys & sensitive config
+backend/core/firebase-key.json
+backend/core/firebase_config.py
+*firebase*.json
+*key*.json
+*service*.json
+
+# DO NOT IGNORE ALL JSON FILES
+!package.json
+!package-lock.json
+!tsconfig.json
+!.vscode/*.json
+
+# Secret & credentials
+*.pem
+*.key
+*.cert
+*.p12
+*secret*
+*password*
+*credential*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Temporary files
+.DS_Store
+*.tmp
+*.temp
+
+# ML model
+*.pt
+*.pth
+*.h5
+*.pkl
+*.pickle
+*.model
+*.weights
+*.ckpt
+
+# Dataset
+ml_model/dataset/
+dataset/
+data/
+*/dataset/
+*/data/
+
+# Node modules
+node_modules/
+*/node_modules/
+
+# Uploads
+uploads/
+backend/uploads/
+*/uploads/
+
+# Build output
+dist/
+build/
+*.egg-info/
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Archives
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
