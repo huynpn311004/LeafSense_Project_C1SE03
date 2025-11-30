@@ -21,6 +21,15 @@ const AdminProducts = () => {
     image_url: '',
     category_id: ''
   })
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    action: null,
+    type: 'confirm'
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -63,12 +72,59 @@ const AdminProducts = () => {
     }
   }
 
+  const handleImageUpload = async (file) => {
+    try {
+      setImageUploading(true)
+      const token = localStorage.getItem('token')
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await axios.post(
+        'http://localhost:8000/api/admin/upload-product-image',
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      )
+
+      return response.data.image_url
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast.error('Lỗi khi upload ảnh')
+      return null
+    } finally {
+      setImageUploading(false)
+    }
+  }
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setSelectedImage(file)
+      // Tạo preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setFormData({ ...formData, image_url: previewUrl })
+    }
+  }
+
   const handleAddProduct = async (e) => {
     e.preventDefault()
     try {
+      let imageUrl = formData.image_url
+      
+      // Nếu có ảnh mới được chọn, upload lên Firebase
+      if (selectedImage) {
+        imageUrl = await handleImageUpload(selectedImage)
+        if (!imageUrl) return // Nếu upload thất bại, dừng lại
+      }
+      
       const token = localStorage.getItem('token')
       const productData = {
         ...formData,
+        image_url: imageUrl,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         category_id: formData.category_id ? parseInt(formData.category_id) : null
@@ -78,22 +134,31 @@ const AdminProducts = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Thêm sản phẩm thành công')
+      toast.success('Product added successfully')
       setShowAddModal(false)
       resetForm()
       fetchProducts()
     } catch (error) {
       console.error('Error adding product:', error)
-      toast.error('Thêm sản phẩm thất bại')
+      toast.error('Failed to add product')
     }
   }
 
   const handleEditProduct = async (e) => {
     e.preventDefault()
     try {
+      let imageUrl = formData.image_url
+      
+      // Nếu có ảnh mới được chọn, upload lên Firebase
+      if (selectedImage) {
+        imageUrl = await handleImageUpload(selectedImage)
+        if (!imageUrl) return // Nếu upload thất bại, dừng lại
+      }
+      
       const token = localStorage.getItem('token')
       const productData = {
         ...formData,
+        image_url: imageUrl,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         category_id: formData.category_id ? parseInt(formData.category_id) : null
@@ -103,31 +168,50 @@ const AdminProducts = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Cập nhật sản phẩm thành công')
+      toast.success('Product updated successfully')
       setShowEditModal(false)
       setEditingProduct(null)
       resetForm()
       fetchProducts()
     } catch (error) {
       console.error('Error updating product:', error)
-      toast.error('Cập nhật sản phẩm thất bại')
+      toast.error('Failed to update product')
     }
   }
 
-  const handleDeleteProduct = async (productId, productName) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${productName}"?`)) {
-      try {
-        const token = localStorage.getItem('token')
-        await axios.delete(`http://localhost:8000/api/admin/products/${productId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        toast.success('Xóa sản phẩm thành công')
-        fetchProducts()
-      } catch (error) {
-        console.error('Error deleting product:', error)
-        toast.error('Xóa sản phẩm thất bại')
-      }
+  const handleDeleteProduct = (productId, productName) => {
+    setModalConfig({
+      isOpen: true,
+      title: 'Delete Product',
+      message: `Are you sure you want to delete product "${productName}"?`,
+      action: () => executeDeleteProduct(productId),
+      type: 'danger'
+    })
+  }
+
+  const executeDeleteProduct = async (productId) => {
+    try {
+      const token = localStorage.getItem('token')
+      await axios.delete(`http://localhost:8000/api/admin/products/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      toast.success('Product deleted successfully')
+      fetchProducts()
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      toast.error('Failed to delete product')
     }
+  }
+
+  const closeConfirmModal = () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }))
+  }
+
+  const onConfirm = () => {
+    if (modalConfig.action) {
+      modalConfig.action()
+    }
+    closeConfirmModal()
   }
 
   const openEditModal = (product) => {
@@ -140,6 +224,7 @@ const AdminProducts = () => {
       image_url: product.image_url || '',
       category_id: product.category_id ? product.category_id.toString() : ''
     })
+    setSelectedImage(null)
     setShowEditModal(true)
   }
 
@@ -152,81 +237,25 @@ const AdminProducts = () => {
       image_url: '',
       category_id: ''
     })
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-    toast.success('Đã đăng xuất')
+    setSelectedImage(null)
   }
 
   if (loading) {
     return (
       <div className="admin-products">
-        <div className="loading">Đang tải...</div>
+        <div className="loading">Loading...</div>
       </div>
     )
   }
 
   return (
     <div className="admin-products">
-      <div className="admin-header">
-        <div className="admin-header-left">
-          <h1>Quản lý Sản phẩm</h1>
-          <p>Quản lý sản phẩm và danh mục</p>
-        </div>
-        <div className="admin-header-right">
-          <button onClick={handleLogout} className="logout-btn">
-            Đăng xuất
-          </button>
-        </div>
-      </div>
-
-      <div className="admin-nav">
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/dashboard')}
-        >
-          Dashboard
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/users')}
-        >
-          Quản lý Users
-        </button>
-        <button 
-          className="nav-btn active"
-          onClick={() => navigate('/admin/products')}
-        >
-          Quản lý Sản phẩm
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/orders')}
-        >
-          Quản lý Đơn hàng
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/categories')}
-        >
-          Quản lý Danh mục
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/coupons')}
-        >
-          Quản lý Mã giảm giá
-        </button>
-      </div>
 
       <div className="products-controls">
         <div className="search-box">
           <input
             type="text"
-            placeholder="Tìm kiếm sản phẩm..."
+            placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -236,7 +265,7 @@ const AdminProducts = () => {
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
-            <option value="">Tất cả danh mục</option>
+            <option value="">All Categories</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>
                 {category.name}
@@ -248,7 +277,7 @@ const AdminProducts = () => {
           className="add-btn"
           onClick={() => setShowAddModal(true)}
         >
-          Thêm sản phẩm
+          Add Product
         </button>
       </div>
 
@@ -267,20 +296,30 @@ const AdminProducts = () => {
               <p className="product-description">{product.description}</p>
               <div className="product-details">
                 <span className="price">{product.price.toLocaleString('vi-VN')}₫</span>
-                <span className="stock">Còn: {product.stock}</span>
+                <span className="stock">Stock: {product.stock}</span>
               </div>
               <div className="product-actions">
                 <button 
                   className="edit-btn"
                   onClick={() => openEditModal(product)}
+                  title="Edit"
                 >
-                  Sửa
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
                 </button>
                 <button 
                   className="delete-btn"
                   onClick={() => handleDeleteProduct(product.id, product.name)}
+                  title="Delete"
                 >
-                  Xóa
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -289,7 +328,7 @@ const AdminProducts = () => {
         
         {products.length === 0 && (
           <div className="no-data">
-            <p>Không có sản phẩm nào</p>
+            <p>No products available</p>
           </div>
         )}
       </div>
@@ -299,12 +338,12 @@ const AdminProducts = () => {
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Thêm sản phẩm mới</h2>
+              <h2>Add New Product</h2>
               <button onClick={() => setShowAddModal(false)}>×</button>
             </div>
             <form onSubmit={handleAddProduct} className="modal-form">
               <div className="form-group">
-                <label>Tên sản phẩm</label>
+                <label>Product Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -313,7 +352,7 @@ const AdminProducts = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Mô tả</label>
+                <label>Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -321,7 +360,7 @@ const AdminProducts = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Giá</label>
+                  <label>Price</label>
                   <input
                     type="number"
                     step="0.01"
@@ -331,7 +370,7 @@ const AdminProducts = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Số lượng</label>
+                  <label>Stock Quantity</label>
                   <input
                     type="number"
                     value={formData.stock}
@@ -341,12 +380,12 @@ const AdminProducts = () => {
                 </div>
               </div>
               <div className="form-group">
-                <label>Danh mục</label>
+                <label>Category</label>
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                 >
-                  <option value="">Chọn danh mục</option>
+                  <option value="">Select Category</option>
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -355,18 +394,74 @@ const AdminProducts = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>URL hình ảnh</label>
-                <input
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                />
+                <label>Hình ảnh sản phẩm</label>
+                
+                {!formData.image_url ? (
+                  <div className="image-upload-area">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden-input"
+                      id="add-product-image"
+                    />
+                    <label htmlFor="add-product-image" className="upload-label">
+                      <div className="upload-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                          <circle cx="9" cy="9" r="2"/>
+                          <path d="L21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                        </svg>
+                      </div>
+                      <span className="upload-text">
+                        {imageUploading ? 'Đang tải lên...' : 'Click để chọn ảnh'}
+                      </span>
+                      <span className="upload-hint">JPG, PNG, GIF (Max 5MB)</span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="image-preview-container">
+                    <img src={formData.image_url} alt="Preview" className="preview-image" />
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setFormData({...formData, image_url: ''})
+                        setSelectedImage(null)
+                      }}
+                      className="remove-image-btn"
+                      title="Xóa ảnh"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                <div className="url-input-wrapper">
+                  <div className="divider">
+                    <span>Hoặc nhập URL</span>
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={selectedImage ? '' : formData.image_url}
+                    onChange={(e) => {
+                      if (!selectedImage) {
+                        setFormData({...formData, image_url: e.target.value})
+                      }
+                    }}
+                    disabled={selectedImage !== null}
+                    className="url-input"
+                  />
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowAddModal(false)}>
-                  Hủy
+                  Cancel
                 </button>
-                <button type="submit">Thêm</button>
+                <button type="submit">Add</button>
               </div>
             </form>
           </div>
@@ -378,12 +473,12 @@ const AdminProducts = () => {
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Sửa sản phẩm</h2>
+              <h2>Edit Product</h2>
               <button onClick={() => setShowEditModal(false)}>×</button>
             </div>
             <form onSubmit={handleEditProduct} className="modal-form">
               <div className="form-group">
-                <label>Tên sản phẩm</label>
+                <label>Product Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -392,7 +487,7 @@ const AdminProducts = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Mô tả</label>
+                <label>Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -400,7 +495,7 @@ const AdminProducts = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Giá</label>
+                  <label>Price</label>
                   <input
                     type="number"
                     step="0.01"
@@ -410,7 +505,7 @@ const AdminProducts = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Số lượng</label>
+                  <label>Stock Quantity</label>
                   <input
                     type="number"
                     value={formData.stock}
@@ -420,12 +515,12 @@ const AdminProducts = () => {
                 </div>
               </div>
               <div className="form-group">
-                <label>Danh mục</label>
+                <label>Category</label>
                 <select
                   value={formData.category_id}
                   onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                 >
-                  <option value="">Chọn danh mục</option>
+                  <option value="">Select Category</option>
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -434,20 +529,102 @@ const AdminProducts = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>URL hình ảnh</label>
-                <input
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                />
+                <label>Hình ảnh sản phẩm</label>
+                
+                {!formData.image_url ? (
+                  <div className="image-upload-area">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden-input"
+                      id="edit-product-image"
+                    />
+                    <label htmlFor="edit-product-image" className="upload-label">
+                      <div className="upload-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                          <circle cx="9" cy="9" r="2"/>
+                          <path d="L21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                        </svg>
+                      </div>
+                      <span className="upload-text">
+                        {imageUploading ? 'Đang tải lên...' : 'Click để chọn ảnh mới'}
+                      </span>
+                      <span className="upload-hint">JPG, PNG, GIF (Max 5MB)</span>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="image-preview-container">
+                    <img src={formData.image_url} alt="Preview" className="preview-image" />
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setFormData({...formData, image_url: ''})
+                        setSelectedImage(null)
+                      }}
+                      className="remove-image-btn"
+                      title="Xóa ảnh"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                <div className="url-input-wrapper">
+                  <div className="divider">
+                    <span>Hoặc nhập URL</span>
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={selectedImage ? '' : formData.image_url}
+                    onChange={(e) => {
+                      if (!selectedImage) {
+                        setFormData({...formData, image_url: e.target.value})
+                      }
+                    }}
+                    disabled={selectedImage !== null}
+                    className="url-input"
+                  />
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowEditModal(false)}>
-                  Hủy
+                  Cancel
                 </button>
-                <button type="submit">Cập nhật</button>
+                <button type="submit">Update</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalConfig.isOpen && (
+        <div className="modal-overlay" onClick={closeConfirmModal}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ borderBottom: 'none', padding: '0 0 16px 0' }}>
+              <h3 className="modal-title">{modalConfig.title}</h3>
+            </div>
+            <div className="modal-body">
+              {modalConfig.message.split('\n').map((line, i) => (
+                <p key={i} style={{ margin: '0 0 8px 0' }}>{line}</p>
+              ))}
+            </div>
+            <div className="modal-actions" style={{ marginTop: 0 }}>
+              <button className="modal-btn cancel" onClick={closeConfirmModal}>
+                Cancel
+              </button>
+              <button 
+                className={`modal-btn confirm ${modalConfig.type === 'danger' ? 'danger' : ''}`}
+                onClick={onConfirm}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}

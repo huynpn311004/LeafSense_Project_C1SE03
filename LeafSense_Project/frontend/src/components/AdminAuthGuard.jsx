@@ -16,7 +16,7 @@ const AdminAuthGuard = ({ children }) => {
     try {
       const userData = JSON.parse(user)
       if (userData.role !== 'admin') {
-        navigate('/')
+        navigate('/dashboard')
         return
       }
     } catch (error) {

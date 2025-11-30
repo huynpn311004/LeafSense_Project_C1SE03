@@ -13,32 +13,39 @@ const AdminCategories = () => {
   const [formData, setFormData] = useState({
     name: ''
   })
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    action: null,
+    type: 'confirm'
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchCategories()
+    loadCategories()
   }, [])
 
-  const fetchCategories = async () => {
+  const loadCategories = async () => {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.get('http://localhost:8000/api/admin/categories', {
         headers: { Authorization: `Bearer ${token}` }
       })
       setCategories(response.data)
+      setLoading(false)
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      console.error('Error loading categories:', error)
       if (error.response?.status === 401) {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         navigate('/login')
       }
-    } finally {
       setLoading(false)
     }
   }
 
-  const handleAddCategory = async (e) => {
+  const addCategory = async (e) => {
     e.preventDefault()
     try {
       const token = localStorage.getItem('token')
@@ -46,17 +53,17 @@ const AdminCategories = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Thêm danh mục thành công')
+      toast.success('Category added successfully!')
       setShowAddModal(false)
-      resetForm()
-      fetchCategories()
+      setFormData({ name: '' })
+      loadCategories()
     } catch (error) {
       console.error('Error adding category:', error)
-      toast.error('Thêm danh mục thất bại')
+      toast.error('Could not add category')
     }
   }
 
-  const handleEditCategory = async (e) => {
+  const updateCategory = async (e) => {
     e.preventDefault()
     try {
       const token = localStorage.getItem('token')
@@ -64,212 +71,200 @@ const AdminCategories = () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success('Cập nhật danh mục thành công')
+      toast.success('Updated successfully!')
       setShowEditModal(false)
       setEditingCategory(null)
-      resetForm()
-      fetchCategories()
+      setFormData({ name: '' })
+      loadCategories()
     } catch (error) {
-      console.error('Error updating category:', error)
-      toast.error('Cập nhật danh mục thất bại')
+      console.error('Update error:', error)
+      toast.error('Update failed')
     }
   }
 
-  const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa danh mục "${categoryName}"?`)) {
-      try {
-        const token = localStorage.getItem('token')
-        await axios.delete(`http://localhost:8000/api/admin/categories/${categoryId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        toast.success('Xóa danh mục thành công')
-        fetchCategories()
-      } catch (error) {
-        console.error('Error deleting category:', error)
-        toast.error(error.response?.data?.detail || 'Xóa danh mục thất bại')
-      }
+  const deleteCategory = (categoryId, categoryName) => {
+    setModalConfig({
+      isOpen: true,
+      title: 'Delete Category',
+      message: `Are you sure you want to delete category "${categoryName}"?`,
+      action: () => executeDeleteCategory(categoryId),
+      type: 'danger'
+    })
+  }
+
+  const executeDeleteCategory = async (categoryId) => {
+    try {
+      const token = localStorage.getItem('token')
+      await axios.delete(`http://localhost:8000/api/admin/categories/${categoryId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      toast.success('Category deleted')
+      loadCategories()
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      toast.error('Could not delete this category')
     }
   }
 
-  const openEditModal = (category) => {
+  const closeConfirmModal = () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }))
+  }
+
+  const onConfirm = () => {
+    if (modalConfig.action) {
+      modalConfig.action()
+    }
+    closeConfirmModal()
+  }
+
+  const editCategory = (category) => {
     setEditingCategory(category)
-    setFormData({
-      name: category.name
-    })
+    setFormData({ name: category.name })
     setShowEditModal(true)
-  }
-
-  const resetForm = () => {
-    setFormData({
-      name: ''
-    })
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-    toast.success('Đã đăng xuất')
   }
 
   if (loading) {
     return (
       <div className="admin-categories">
-        <div className="loading">Đang tải...</div>
+        <div className="loading">Loading data...</div>
       </div>
     )
   }
 
   return (
     <div className="admin-categories">
-      <div className="admin-header">
-        <div className="admin-header-left">
-          <h1>Quản lý Danh mục</h1>
-          <p>Quản lý danh mục sản phẩm</p>
-        </div>
-        <div className="admin-header-right">
-          <button onClick={handleLogout} className="logout-btn">
-            Đăng xuất
-          </button>
-        </div>
-      </div>
-
-      <div className="admin-nav">
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/dashboard')}
-        >
-          Dashboard
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/users')}
-        >
-          Quản lý Users
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/products')}
-        >
-          Quản lý Sản phẩm
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/orders')}
-        >
-          Quản lý Đơn hàng
-        </button>
-        <button 
-          className="nav-btn active"
-          onClick={() => navigate('/admin/categories')}
-        >
-          Quản lý Danh mục
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/coupons')}
-        >
-          Quản lý Mã giảm giá
-        </button>
-      </div>
 
       <div className="categories-controls">
         <button 
           className="add-btn"
           onClick={() => setShowAddModal(true)}
         >
-          Thêm danh mục
+          Add Category
         </button>
       </div>
 
       <div className="categories-grid">
-        {categories.map((category) => (
-          <div key={category.id} className="category-card">
-            <div className="category-icon">🏷️</div>
-            <div className="category-info">
-              <h3>{category.name}</h3>
-              <p>ID: {category.id}</p>
+        {categories.length > 0 ? (
+          categories.map((category) => (
+            <div key={category.id} className="category-card">
+              <div className="category-icon">🏷️</div>
+              <div className="category-info">
+                <h3>{category.name}</h3>
+                <p>ID: {category.id}</p>
+              </div>
+              <div className="category-actions">
+                <button 
+                  className="edit-btn"
+                  onClick={() => editCategory(category)}
+                  title="Edit"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </button>
+                <button 
+                  className="delete-btn"
+                  onClick={() => deleteCategory(category.id, category.name)}
+                  title="Delete"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="category-actions">
-              <button 
-                className="edit-btn"
-                onClick={() => openEditModal(category)}
-              >
-                Sửa
-              </button>
-              <button 
-                className="delete-btn"
-                onClick={() => handleDeleteCategory(category.id, category.name)}
-              >
-                Xóa
-              </button>
-            </div>
-          </div>
-        ))}
-        
-        {categories.length === 0 && (
+          ))
+        ) : (
           <div className="no-data">
-            <p>Không có danh mục nào</p>
+            <p>No categories yet</p>
           </div>
         )}
       </div>
 
-      {/* Add Category Modal */}
       {showAddModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Thêm danh mục mới</h2>
+              <h2>Add New Category</h2>
               <button onClick={() => setShowAddModal(false)}>×</button>
             </div>
-            <form onSubmit={handleAddCategory} className="modal-form">
+            <form onSubmit={addCategory} className="modal-form">
               <div className="form-group">
-                <label>Tên danh mục</label>
+                <label>Category Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   required
-                  placeholder="Nhập tên danh mục"
+                  placeholder="Enter category name"
                 />
               </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowAddModal(false)}>
-                  Hủy
+                  Cancel
                 </button>
-                <button type="submit">Thêm</button>
+                <button type="submit">Add</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Edit Category Modal */}
       {showEditModal && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Sửa danh mục</h2>
+              <h2>Edit Category</h2>
               <button onClick={() => setShowEditModal(false)}>×</button>
             </div>
-            <form onSubmit={handleEditCategory} className="modal-form">
+            <form onSubmit={updateCategory} className="modal-form">
               <div className="form-group">
-                <label>Tên danh mục</label>
+                <label>Category Name</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   required
-                  placeholder="Nhập tên danh mục"
+                  placeholder="Enter category name"
                 />
               </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowEditModal(false)}>
-                  Hủy
+                  Cancel
                 </button>
-                <button type="submit">Cập nhật</button>
+                <button type="submit">Update</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalConfig.isOpen && (
+        <div className="modal-overlay" onClick={closeConfirmModal}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ borderBottom: 'none', padding: '0 0 16px 0' }}>
+              <h3 className="modal-title">{modalConfig.title}</h3>
+            </div>
+            <div className="modal-body">
+              {modalConfig.message.split('\n').map((line, i) => (
+                <p key={i} style={{ margin: '0 0 8px 0' }}>{line}</p>
+              ))}
+            </div>
+            <div className="modal-actions" style={{ marginTop: 0 }}>
+              <button className="modal-btn cancel" onClick={closeConfirmModal}>
+                Cancel
+              </button>
+              <button 
+                className={`modal-btn confirm ${modalConfig.type === 'danger' ? 'danger' : ''}`}
+                onClick={onConfirm}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}

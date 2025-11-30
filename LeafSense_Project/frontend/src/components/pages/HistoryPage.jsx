@@ -7,6 +7,10 @@ const HistoryPage = () => {
   const [historyData, setHistoryData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedPrediction, setSelectedPrediction] = useState(null)
+  const [showModal, setShowModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState(null)
 
   // Hàm để lấy dữ liệu từ API
   const fetchHistoryData = async (diseaseFilter = null) => {
@@ -123,19 +127,19 @@ const HistoryPage = () => {
         const details = await response.json()
         console.log('Prediction details:', details)
         
-        // Tạo modal hoặc navigate để hiển thị chi tiết
-        alert(`
-Disease: ${details.disease_type}
-Confidence: ${details.confidence}%
-Date: ${details.created_at}
-Treatment: ${details.treatment_recommendation || 'No treatment info available'}
-        `)
+        setSelectedPrediction(details)
+        setShowModal(true)
       } else {
         console.error('Failed to fetch prediction details')
       }
     } catch (error) {
       console.error('Error fetching prediction details:', error)
     }
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
+    setSelectedPrediction(null)
   }
 
   const handleDownloadReport = (id) => {
@@ -170,20 +174,17 @@ Generated on: ${new Date().toLocaleString()}
     URL.revokeObjectURL(url)
   }
 
-  const handleDeleteRecord = async (id) => {
+  const handleDeleteRecord = (id) => {
     const item = historyData.find(h => h.id === id)
-    if (!item) return
+    if (item) {
+      setItemToDelete(item)
+      setShowDeleteModal(true)
+    }
+  }
 
-    // Xác nhận xóa
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete this analysis record?\n\n` +
-      `Disease: ${item.disease}\n` +
-      `Confidence: ${item.confidence}%\n` +
-      `Date: ${item.date} ${item.time}\n\n` +
-      `This action cannot be undone.`
-    )
-
-    if (!confirmDelete) return
+  const confirmDelete = async () => {
+    if (!itemToDelete) return
+    const id = itemToDelete.id
 
     try {
       const token = localStorage.getItem('token')
@@ -204,7 +205,8 @@ Generated on: ${new Date().toLocaleString()}
       if (response.ok) {
         // Xóa thành công, cập nhật state
         setHistoryData(prevData => prevData.filter(record => record.id !== id))
-        alert('Analysis record deleted successfully!')
+        setShowDeleteModal(false)
+        setItemToDelete(null)
         
         // Refresh data để đảm bảo đồng bộ
         refreshData()
@@ -214,7 +216,7 @@ Generated on: ${new Date().toLocaleString()}
         localStorage.removeItem('token')
       } else if (response.status === 404) {
         alert('Record not found. It may have been already deleted.')
-        // Refresh data để cập nhật state
+        setShowDeleteModal(false)
         refreshData()
       } else {
         const errorData = await response.json()
@@ -407,19 +409,27 @@ Generated on: ${new Date().toLocaleString()}
                           onClick={() => handleViewDetails(item.id)}
                           title="View Details"
                         >
-                          <span className="btn-icon">👁️</span>
-                          View
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
                         </button>
                         <button className="download-btn" onClick={() => handleDownloadReport(item.id)} title="Download Report">
-                          <span className="btn-icon">📥</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
                         </button>
                         <button 
                           className="delete-btn"
                           onClick={() => handleDeleteRecord(item.id)}
                           title="Delete Record"
                         >
-                          <span className="btn-icon">🗑️</span>
-                          Delete
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
                         </button>
                       </div>
                     </td>
@@ -455,6 +465,94 @@ Generated on: ${new Date().toLocaleString()}
             </button>
           </div>
         </div>
+
+        {/* Modal Detail View */}
+        {showModal && selectedPrediction && (
+          <div className="modal-overlay" onClick={closeModal}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Analysis Details</h2>
+                <button className="close-modal-btn" onClick={closeModal}>&times;</button>
+              </div>
+              <div className="modal-body">
+                <div className="detail-grid">
+                  <div className="detail-row">
+                    <span className="detail-label">Disease Detected:</span>
+                    <span className="detail-value highlight">{selectedPrediction.disease_type}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Confidence:</span>
+                    <span className="detail-value">{selectedPrediction.confidence}%</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Date:</span>
+                    <span className="detail-value">{selectedPrediction.created_at}</span>
+                  </div>
+                </div>
+                
+                <div className="detail-section">
+                  <h3>Treatment Recommendation</h3>
+                  <div className="treatment-box">
+                    <p className="treatment-text">
+                      {selectedPrediction.treatment_recommendation || 'No specific treatment recommendation available.'}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedPrediction.image && (
+                   <div className="detail-image-container">
+                      <h3>Analyzed Image</h3>
+                      <div className="detail-image">
+                        <img src={selectedPrediction.image} alt="Analysis result" />
+                      </div>
+                   </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="modal-close-btn" onClick={closeModal}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Delete Confirmation */}
+        {showDeleteModal && itemToDelete && (
+          <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+            <div className="modal-content delete-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Delete Record</h2>
+                <button className="close-modal-btn" onClick={() => setShowDeleteModal(false)}>&times;</button>
+              </div>
+              <div className="modal-body">
+                <div className="delete-icon-container">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="delete-warning-icon">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                </div>
+                <p className="delete-message">
+                  Are you sure you want to delete this analysis record?
+                </p>
+                <div className="delete-details">
+                  <div className="delete-detail-item">
+                    <span className="label">Disease:</span>
+                    <span className="value">{itemToDelete.disease}</span>
+                  </div>
+                  <div className="delete-detail-item">
+                    <span className="label">Date:</span>
+                    <span className="value">{itemToDelete.date} {itemToDelete.time}</span>
+                  </div>
+                </div>
+                <p className="delete-warning-text">This action cannot be undone.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="cancel-btn" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                <button className="confirm-delete-btn" onClick={confirmDelete}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   )

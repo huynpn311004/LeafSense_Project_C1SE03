@@ -9,6 +9,13 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    action: null,
+    type: 'confirm'
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -38,132 +45,101 @@ const AdminUsers = () => {
     }
   }
 
-  const handleToggleStatus = async (userId) => {
+  const handleToggleStatus = (userId) => {
     const user = users.find(u => u.id === userId)
-    const action = user?.status === 'active' ? 'khóa' : 'mở khóa'
+    const action = user?.status === 'active' ? 'lock' : 'unlock'
     
-    if (user?.status === 'active' && !window.confirm(
-      `Bạn có chắc chắn muốn khóa tài khoản của "${user?.name}"?\n\n` +
-      `User sẽ không thể đăng nhập và sẽ nhận được thông báo liên hệ email hỗ trợ.`
-    )) {
-      return
+    if (user?.status === 'active') {
+      setModalConfig({
+        isOpen: true,
+        title: 'Lock Account',
+        message: `Are you sure you want to lock account of "${user?.name}"?\n\nUser will not be able to login and will receive notification to contact support email.`,
+        action: () => executeToggleStatus(userId, action),
+        type: 'danger'
+      })
+    } else {
+      executeToggleStatus(userId, action)
     }
-    
+  }
+
+  const executeToggleStatus = async (userId, action) => {
     try {
       const token = localStorage.getItem('token')
       const response = await axios.put(`http://localhost:8000/api/admin/users/${userId}/status`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       })
       
-      toast.success(response.data.message || `Đã ${action} tài khoản thành công`)
+      toast.success(response.data.message || `Account ${action}ed successfully`)
       fetchUsers()
     } catch (error) {
       console.error('Error updating user status:', error)
-      toast.error(`${action === 'khóa' ? 'Khóa' : 'Mở khóa'} tài khoản thất bại`)
+      toast.error(`${action === 'lock' ? 'Lock' : 'Unlock'} account failed`)
     }
   }
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa user "${userName}"?`)) {
-      try {
-        const token = localStorage.getItem('token')
-        await axios.delete(`http://localhost:8000/api/admin/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        toast.success('Xóa user thành công')
-        fetchUsers()
-      } catch (error) {
-        console.error('Error deleting user:', error)
-        toast.error('Xóa user thất bại')
-      }
+  const handleDeleteUser = (userId, userName) => {
+    setModalConfig({
+      isOpen: true,
+      title: 'Delete User',
+      message: `Are you sure you want to delete user "${userName}"?`,
+      action: () => executeDeleteUser(userId),
+      type: 'danger'
+    })
+  }
+
+  const executeDeleteUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('token')
+      await axios.delete(`http://localhost:8000/api/admin/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      toast.success('User deleted successfully')
+      fetchUsers()
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      toast.error('Failed to delete user')
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    navigate('/login')
-    toast.success('Đã đăng xuất')
+  const closeConfirmModal = () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }))
+  }
+
+  const onConfirm = () => {
+    if (modalConfig.action) {
+      modalConfig.action()
+    }
+    closeConfirmModal()
   }
 
   if (loading) {
     return (
       <div className="admin-users">
-        <div className="loading">Đang tải...</div>
+        <div className="loading">Loading...</div>
       </div>
     )
   }
 
   return (
     <div className="admin-users">
-      <div className="admin-header">
-        <div className="admin-header-left">
-          <h1>Quản lý Users</h1>
-          <p>Quản lý tài khoản khách hàng</p>
-        </div>
-        <div className="admin-header-right">
-          <button onClick={handleLogout} className="logout-btn">
-            Đăng xuất
-          </button>
-        </div>
-      </div>
-
-      <div className="admin-nav">
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/dashboard')}
-        >
-          Dashboard
-        </button>
-        <button 
-          className="nav-btn active"
-          onClick={() => navigate('/admin/users')}
-        >
-          Quản lý Users
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/products')}
-        >
-          Quản lý Sản phẩm
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/orders')}
-        >
-          Quản lý Đơn hàng
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/categories')}
-        >
-          Quản lý Danh mục
-        </button>
-        <button 
-          className="nav-btn"
-          onClick={() => navigate('/admin/coupons')}
-        >
-          Quản lý Mã giảm giá
-        </button>
-      </div>
 
       <div className="users-controls">
         <div className="search-box">
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên hoặc email..."
+            placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="filter-box">
-          <select
+          <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="active">Đang hoạt động</option>
-            <option value="inactive">Đã khóa</option>
+            <option value="">All status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Locked</option>
           </select>
         </div>
       </div>
@@ -173,13 +149,13 @@ const AdminUsers = () => {
           <thead>
             <tr>
               <th>ID</th>
-              <th>Tên</th>
+              <th>Name</th>
               <th>Email</th>
-              <th>Số điện thoại</th>
-              <th>Địa chỉ</th>
-              <th>Trạng thái</th>
-              <th>Ngày tạo</th>
-              <th>Thao tác</th>
+              <th>Phone</th>
+              <th>Address</th>
+              <th>Status</th>
+              <th>Created Date</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -192,23 +168,40 @@ const AdminUsers = () => {
                 <td>{user.address || '-'}</td>
                 <td>
                   <span className={`status-badge ${user.status}`}>
-                    {user.status === 'active' ? 'Hoạt động' : 'Đã khóa'}
+                    {user.status === 'active' ? 'Active' : 'Locked'}
                   </span>
                 </td>
-                <td>{new Date(user.created_at).toLocaleDateString('vi-VN')}</td>
+                <td>{new Date(user.created_at).toLocaleDateString('en-US')}</td>
                 <td>
                   <div className="action-buttons">
                     <button
-                      className={`action-btn ${user.status === 'active' ? 'lock' : 'unlock'}`}
+                      className="edit-btn"
                       onClick={() => handleToggleStatus(user.id)}
+                      title={user.status === 'active' ? 'Lock Account' : 'Unlock Account'}
                     >
-                      {user.status === 'active' ? 'Khóa' : 'Mở khóa'}
+                      {user.status === 'active' ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                          <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                        </svg>
+                      )}
                     </button>
                     <button
-                      className="action-btn delete"
+                      className="delete-btn"
                       onClick={() => handleDeleteUser(user.id, user.name)}
+                      title="Delete User"
                     >
-                      Xóa
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
                     </button>
                   </div>
                 </td>
@@ -219,10 +212,36 @@ const AdminUsers = () => {
         
         {users.length === 0 && (
           <div className="no-data">
-            <p>Không có user nào</p>
+            <p>No users available</p>
           </div>
         )}
       </div>
+
+      {modalConfig.isOpen && (
+        <div className="modal-overlay" onClick={closeConfirmModal}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">{modalConfig.title}</h3>
+            </div>
+            <div className="modal-body">
+              {modalConfig.message.split('\n').map((line, i) => (
+                <p key={i} style={{ margin: '0 0 8px 0' }}>{line}</p>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={closeConfirmModal}>
+                Cancel
+              </button>
+              <button 
+                className={`modal-btn confirm ${modalConfig.type === 'danger' ? 'danger' : ''}`}
+                onClick={onConfirm}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

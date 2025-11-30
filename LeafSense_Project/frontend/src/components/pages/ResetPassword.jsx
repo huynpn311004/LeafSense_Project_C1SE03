@@ -30,14 +30,14 @@ const ResetPassword = () => {
         }
       );
 
-      toast.success('Mật khẩu đã được đặt lại thành công!');
+      toast.success('Password has been reset successfully!');
       navigate('/login');
     } catch (error) {
       console.error('Error:', error);
       if (error.response?.status === 400) {
-        toast.error('Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!');
+        toast.error('Password reset link is invalid or has expired!');
       } else {
-        toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
+        toast.error('An error occurred. Please try again later.');
       }
     } finally {
       setIsLoading(false);
@@ -49,14 +49,14 @@ const ResetPassword = () => {
       <div className="auth-card">
         <div>
           <h2 className="auth-title">
-            Đặt Lại Mật Khẩu
+            Reset Password
           </h2>
         </div>
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <div className="form-field">
               <label htmlFor="new-password" className="form-label">
-                Mật khẩu mới
+                New Password
               </label>
               <div className="input-with-toggle">
                 <input
@@ -65,14 +65,14 @@ const ResetPassword = () => {
                   type={showNew ? 'text' : 'password'}
                   required
                   className={`input`}
-                  placeholder="Mật khẩu mới"
+                  placeholder="New password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
                 <button
                   type="button"
                   className="toggle-btn"
-                  aria-label={showNew ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  aria-label={showNew ? 'Hide password' : 'Show password'}
                   onClick={() => setShowNew((v) => !v)}
                 >
                   {showNew ? (
@@ -91,7 +91,7 @@ const ResetPassword = () => {
             </div>
             <div className="form-field">
               <label htmlFor="confirm-password" className="form-label">
-                Xác nhận mật khẩu
+                Confirm Password
               </label>
               <div className="input-with-toggle">
                 <input
@@ -100,14 +100,14 @@ const ResetPassword = () => {
                   type={showConfirm ? 'text' : 'password'}
                   required
                   className={`input`}
-                  placeholder="Xác nhận mật khẩu"
+                  placeholder="Confirm password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 <button
                   type="button"
                   className="toggle-btn"
-                  aria-label={showConfirm ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  aria-label={showConfirm ? 'Hide password' : 'Show password'}
                   onClick={() => setShowConfirm((v) => !v)}
                 >
                   {showConfirm ? (
@@ -131,7 +131,7 @@ const ResetPassword = () => {
             disabled={isLoading}
             className="btn btn-primary btn-block"
           >
-            {isLoading ? 'Đang xử lý...' : 'Đặt Lại Mật Khẩu'}
+            {isLoading ? 'Processing...' : 'Reset Password'}
           </button>
         </form>
       </div>
