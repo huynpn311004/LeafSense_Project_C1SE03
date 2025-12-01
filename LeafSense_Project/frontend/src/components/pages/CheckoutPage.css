@@ -616,3 +616,166 @@
   transform: none;
   box-shadow: none;
 }
+
+/* ===== MoMo QR Code Modal ===== */
+.momo-qr-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.momo-qr-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.momo-qr-content h3 {
+  color: #d82d8b;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.momo-qr-content > p {
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.momo-qr-code {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.qr-placeholder {
+  background: white;
+  border: 3px solid #d82d8b;
+  border-radius: 12px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.qr-pattern {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  background: #000;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.qr-cell {
+  aspect-ratio: 1;
+}
+
+.qr-text {
+  font-weight: 600;
+  color: #d82d8b;
+  margin: 0;
+}
+
+.qr-amount {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.momo-instructions {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.momo-instructions p {
+  margin: 0 0 0.75rem 0;
+  font-weight: 600;
+  color: #333;
+}
+
+.momo-instructions ol {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #666;
+  line-height: 1.8;
+}
+
+.momo-instructions li {
+  margin-bottom: 0.5rem;
+}
+
+.momo-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.cancel-payment-btn,
+.confirm-payment-btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-payment-btn {
+  background: #e5e7eb;
+  color: #333;
+}
+
+.cancel-payment-btn:hover {
+  background: #d1d5db;
+}
+
+.confirm-payment-btn {
+  background: #d82d8b;
+  color: white;
+}
+
+.confirm-payment-btn:hover {
+  background: #b81d75;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(216, 45, 139, 0.3);
+}
+
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}

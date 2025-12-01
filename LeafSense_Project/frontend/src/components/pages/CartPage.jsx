@@ -15,6 +15,7 @@ const CartPage = () => {
   const [selectedItems, setSelectedItems] = useState(new Set())
   const [availableCoupons, setAvailableCoupons] = useState([])
   const [loadingCoupons, setLoadingCoupons] = useState(false)
+  const [showCoupons, setShowCoupons] = useState(false)
 
   // ===== CART SYNC FUNCTIONS =====
   const syncCartFromDatabase = async () => {
@@ -334,7 +335,6 @@ const CartPage = () => {
       <div className="cart-page">
         <div className="cart-page-header">
           <div className="cart-header-info">
-            <span className="cart-count">{cartItems.length} products</span>
           </div>
           {cartItems.length > 0 && (
             <div className="cart-header-controls">
@@ -424,7 +424,7 @@ const CartPage = () => {
         {selectedItems.size > 0 && (
           <div className="cart-summary-fixed">
             <div className="summary-card">
-              <h3>Checkout ({selectedItems.size} products)</h3>
+              <h3>Checkout</h3>
               
               {/* Coupon Section */}
               <div className="coupon-section">
@@ -432,14 +432,50 @@ const CartPage = () => {
                 {!appliedCoupon ? (
                   <div className="coupon-input-section">
                     <div className="coupon-input-group">
-                      <input
-                        type="text"
-                        placeholder="Enter coupon code..."
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        className="coupon-input"
-                        onKeyPress={(e) => e.key === 'Enter' && handleApplyCoupon()}
-                      />
+                      <div className="coupon-combobox-wrapper">
+                        <input
+                          type="text"
+                          placeholder="Select or enter coupon code..."
+                          value={couponCode}
+                          onChange={(e) => {
+                            setCouponCode(e.target.value)
+                            setShowCoupons(true)
+                          }}
+                          onClick={() => setShowCoupons(!showCoupons)}
+                          className="coupon-input"
+                          onKeyPress={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                        />
+                        <button 
+                          className="coupon-dropdown-toggle"
+                          onClick={() => setShowCoupons(!showCoupons)}
+                        >
+                          ▼
+                        </button>
+                        
+                        {/* Dropdown List */}
+                        {showCoupons && availableCoupons.length > 0 && (
+                          <div className="coupon-dropdown-list">
+                            {availableCoupons.map((coupon) => (
+                              <div 
+                                key={coupon.id} 
+                                className={`coupon-dropdown-item ${coupon.can_use ? 'usable' : 'disabled'}`}
+                                onClick={() => {
+                                  if (coupon.can_use) {
+                                    setCouponCode(coupon.code)
+                                    setShowCoupons(false)
+                                  }
+                                }}
+                              >
+                                <div className="coupon-code-badge">{coupon.code}</div>
+                                <div className="coupon-info-text">
+                                  <span className="coupon-name">{coupon.name}</span>
+                                  {coupon.description && <span className="coupon-desc">{coupon.description}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <button 
                         className="apply-coupon-btn"
                         onClick={handleApplyCoupon}
@@ -449,49 +485,6 @@ const CartPage = () => {
                     </div>
                     {couponError && (
                       <div className="coupon-error">{couponError}</div>
-                    )}
-                    
-                    {/* Available Coupons List */}
-                    {availableCoupons.length > 0 && (
-                      <div className="available-coupons">
-                        <h5>Available coupons:</h5>
-                        <div className="coupons-list">
-                          {availableCoupons.map((coupon) => (
-                            <div 
-                              key={coupon.id} 
-                              className={`coupon-item ${coupon.can_use ? 'usable' : 'disabled'}`}
-                              onClick={() => coupon.can_use && setCouponCode(coupon.code)}
-                            >
-                              <div className="coupon-code">
-                                {coupon.code}
-                              </div>
-                              <div className="coupon-right">
-                                <div className="coupon-details">
-                                  <span className="coupon-name">{coupon.name}</span>
-                                  {coupon.description && (
-                                    <span className="coupon-item-desc">{coupon.description}</span>
-                                  )}
-                                  {!coupon.can_use && coupon.reason && (
-                                    <span className="coupon-item-reason">{coupon.reason}</span>
-                                  )}
-                                </div>
-                                {coupon.can_use && (
-                                  <button 
-                                    className="use-coupon-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setCouponCode(coupon.code)
-                                      handleApplyCoupon()
-                                    }}
-                                  >
-                                    Use
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
                     )}
                     
                     {loadingCoupons && (

@@ -8,7 +8,7 @@ const LandingPage = () => {
     <div className="landing-container">
       <header className="landing-header">
         <div className="logo">
-          <span role="img" aria-label="leaf">🍃</span> LeafSense
+          <span role="img" aria-label="leaf"></span> LeafSense
         </div>
         <div className="auth-buttons">
           <Link to="/login" className="btn btn-login">Login</Link>
