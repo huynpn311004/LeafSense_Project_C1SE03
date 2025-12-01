@@ -14,8 +14,11 @@ const CheckoutPage = () => {
     address: '',
     phone: '',
     email: '',
-    note: ''
+    note: '',
+    paymentMethod: 'COD'
   })
+  
+  const [showMoMoQR, setShowMoMoQR] = useState(false)
 
   // Get cart data from navigation state or database
   const [cartItems, setCartItems] = useState([])
@@ -196,39 +199,28 @@ const CheckoutPage = () => {
   }
 
   const handleSubmitOrder = async (e) => {
-    e.preventDefault()
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
     
     // Validate form
     if (!orderData.fullName || !orderData.address || !orderData.phone || !orderData.email) {
-      alert('Please fill in all required information!')
+      alert('Vui lòng điền đầy đủ thông tin!')
       return
     }
 
     // Validate cart items
     if (!cartItems || cartItems.length === 0) {
-      alert('There are no items in your cart!')
+      alert('Giỏ hàng của bạn đang trống!')
       return
     }
 
-    // Prepare order data
-    const orderPayload = {
-      customer: orderData,
-      items: cartItems,
-      summary: {
-        subtotal: calculateSubtotal(),
-        shippingFee: shippingFee,
-        discount: calculateDiscount(),
-        total: calculateTotal(),
-        coupon: couponData.isApplied ? {
-          code: couponData.code,
-          discount: couponData.discount
-        } : null
-      },
-      timestamp: new Date().toISOString()
+    // If MoMo payment, show QR code first
+    if (orderData.paymentMethod === 'MoMo' && !showMoMoQR) {
+      setShowMoMoQR(true)
+      return
     }
 
-    console.log('Submitting Order:', orderPayload)
-    
     try {
       // Prepare order data according to backend API format
       const orderApiData = {
@@ -250,12 +242,15 @@ const CheckoutPage = () => {
       const createdOrder = await ShopService.createOrder(orderApiData)
       console.log('Order created successfully:', createdOrder)
       
-      // Just alert success, cart has been cleared from database
-      alert('Order placed successfully!')
+      // Close MoMo QR if open
+      setShowMoMoQR(false)
+      
+      // Alert success
+      alert('Đặt hàng thành công!')
       navigate('/orders')
     } catch (error) {
       console.error('Error placing order:', error)
-      alert(`An error occurred while placing the order: ${error.message || 'Please try again!'}`)
+      alert(`Có lỗi xảy ra khi đặt hàng: ${error.message || 'Vui lòng thử lại!'}`)
     }
   }
 
@@ -332,6 +327,23 @@ const CheckoutPage = () => {
                   placeholder="Order notes"
                   rows="3"
                 />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="paymentMethod">Payment Method *</label>
+                <select
+                  id="paymentMethod"
+                  name="paymentMethod"
+                  value={orderData.paymentMethod}
+                  onChange={(e) => {
+                    setOrderData({ ...orderData, paymentMethod: e.target.value })
+                    setShowMoMoQR(e.target.value === 'MoMo')
+                  }}
+                  required
+                >
+                  <option value="COD">Cash on Delivery (COD)</option>
+                  <option value="MoMo">MoMo Wallet</option>
+                </select>
               </div>
 
               <div className="form-buttons">
@@ -421,6 +433,73 @@ const CheckoutPage = () => {
                 <span className="total-price">{calculateTotal().toLocaleString('vi-VN')} ₫</span>
               </div>
             </div>
+
+            {/* MoMo QR Code Modal */}
+            {showMoMoQR && orderData.paymentMethod === 'MoMo' && (
+              <div className="momo-qr-modal">
+                <div className="momo-qr-content">
+                  <h3>Thanh toán bằng MoMo</h3>
+                  <p>Quét mã QR để thanh toán</p>
+                  
+                  {/* Mock QR Code - Using a placeholder or generating a simple pattern */}
+                  <div className="momo-qr-code">
+                    <div className="qr-placeholder">
+                      <div className="qr-pattern">
+                        {/* Simple QR-like pattern */}
+                        <div className="qr-grid">
+                          {Array.from({ length: 25 }).map((_, i) => (
+                            <div 
+                              key={i} 
+                              className="qr-cell"
+                              style={{ 
+                                backgroundColor: Math.random() > 0.5 ? '#000' : '#fff',
+                                width: '20px',
+                                height: '20px'
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="qr-text">Mã QR MoMo</p>
+                      <p className="qr-amount">Số tiền: {calculateTotal().toLocaleString('vi-VN')} ₫</p>
+                    </div>
+                  </div>
+                  
+                  <div className="momo-instructions">
+                    <p><strong>Hướng dẫn:</strong></p>
+                    <ol>
+                      <li>Mở ứng dụng MoMo trên điện thoại</li>
+                      <li>Chọn "Quét mã"</li>
+                      <li>Quét mã QR ở trên</li>
+                      <li>Xác nhận thanh toán</li>
+                    </ol>
+                  </div>
+                  
+                  <div className="momo-actions">
+                    <button 
+                      className="cancel-payment-btn"
+                      onClick={() => {
+                        setOrderData({ ...orderData, paymentMethod: 'COD' })
+                        setShowMoMoQR(false)
+                      }}
+                    >
+                      Hủy
+                    </button>
+                    <button 
+                      className="confirm-payment-btn"
+                      onClick={() => {
+                        // Simulate payment confirmation
+                        alert('Thanh toán thành công! (Mock - Demo)')
+                        // Continue with order submission
+                        handleSubmitOrder()
+                      }}
+                    >
+                      Đã thanh toán
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
